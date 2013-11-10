@@ -5,12 +5,12 @@ class TaskWebstatus extends Task {
 
   function do_(array $args = null) {
     if (empty($args['short'])) {
-      $atoms = rtrim(Task::make('atoms')->capture('count'));
-      $pages = rtrim(Task::make('pages')->capture('stats'));
+      //$atoms = rtrim(Task::make('atoms')->capture('count'));
+      //$pages = rtrim(Task::make('pages')->capture('stats'));
       $queue = rtrim(Task::make('queue')->capture('stats'));
 
-      echo strpos($atoms, "\n") ? HLEx::pre_q($atoms, 'atoms') : '',
-           strpos($pages, "\n") ? HLEx::pre_q($pages, 'pages') : '',
+      echo //strpos($atoms, "\n") ? HLEx::pre_q($atoms, 'atoms') : '',
+           //strpos($pages, "\n") ? HLEx::pre_q($pages, 'pages') : '',
            HLEx::pre_q($queue, 'gen output queue');
     } else {
       $this->outputShort($args);
@@ -21,8 +21,8 @@ class TaskWebstatus extends Task {
     echo '<p>';
     $this->outputShortQueue(Task::make('queue')->capture('stats'));
     echo '</p><p>';
-    $this->outputShortPages(Task::make('pages')->capture('stats'));
-    echo '</p>';
+//    $this->outputShortPages(Task::make('pages')->capture('stats'));
+//    echo '</p>';
   }
 
   function outputShortQueue($stats) {

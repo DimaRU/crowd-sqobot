@@ -15,6 +15,8 @@ set_time_limit(24 * 3600);
 
 require_once ROOT.'sys/core.php';
 require_once ROOT.'lib/squall.php';
+require_once ROOT.'swiftmailer/lib/swift_required.php';
+
 \Squall\initEx(NS);
 
 spl_autoload_register(function ($class) {

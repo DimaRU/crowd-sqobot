@@ -236,7 +236,7 @@ function log($msg, $level = 'info') {
 
     S::mkdirOf($log);
     touch($log);
-    file_put_contents($log, "$msg\n\n", FILE_APPEND);
+    file_put_contents($log, "$msg\n", FILE_APPEND);
   }
 }
 
@@ -302,15 +302,15 @@ function dbImport($sqls) {
 
 function atomic($func) {
   // Fatal Errors are handled by Atoms so no rolling back on them.
-  $atomate = Atoms::enabled() and Atoms::enter();
+  $atomate = false;     //Atoms::enabled() and Atoms::enter();
 
   if (db()->inTransaction()) {
     try {
       $result = call_user_func($func);
-      $atomate and Atoms::commit();
+      //$atomate and Atoms::commit();
       return $result;
     } catch (Exception $e) {
-      $atomate and Atoms::rollback();
+      //$atomate and Atoms::rollback();
       throw $e;
     }
   } else {
@@ -320,11 +320,11 @@ function atomic($func) {
       function () use ($func, $atomate) {
         $result = call_user_func($func);
         db()->commit();
-        $atomate and Atoms::commit();
+        //$atomate and Atoms::commit();
         return $result;
       },
       function ($e, $fatal) use ($atomate) {
-        !$fatal and $atomate and Atoms::rollback();
+        //!$fatal and $atomate and Atoms::rollback();
         // when this exception handler is called by a Fatal Error transaction
         // has already been rolled back by PHP.
         db()->inTransaction() and db()->rollBack();
