@@ -48,8 +48,8 @@ class NewsMailer {
     }
     
     // Add one line with content (ref, name ...)
-    function addContentLine($sitename, $row) {
-        $this->addSiteHeader($sitename);
+    function addContentLine($row) {
+        $this->addSiteHeader($row->site_id);
         $this->addCategoryHeader($row->category);
         
         $s = '<div><a href="' . $row->short_url . '" class="project line" title="'
@@ -63,12 +63,12 @@ class NewsMailer {
         $this->message->setSubject(ucfirst($digest)." new projects digest.");
     }
     
-    function addHeader() {
+    function addHeader($digest) {
         if ($this->contentlines == 0)
             $this->body = "<h2>No new projects from latest $digest email.</h2>";
     }
     
-    function addFooter() {
+    function addFooter($digest) {
         $this->body .= "<p>Please do not reply to this message</p>";
     }
     

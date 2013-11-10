@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Хост: localhost
--- Время создания: Ноя 10 2013 г., 17:31
+-- Время создания: Ноя 10 2013 г., 23:12
 -- Версия сервера: 5.1.69
 -- Версия PHP: 5.3.3
 
@@ -38,42 +38,6 @@ CREATE TABLE IF NOT EXISTS `st_indiegogo_index` (
 -- --------------------------------------------------------
 
 --
--- Структура таблицы `st_indiegogo_pages`
---
-
-CREATE TABLE IF NOT EXISTS `st_indiegogo_pages` (
-  `load_time` datetime NOT NULL COMMENT 'Время загрузки страницы с данными',
-  `project_id` varchar(255) NOT NULL COMMENT 'Часть ссылки на проект',
-  `name` varchar(100) NOT NULL,
-  `blurb` varchar(255) NOT NULL,
-  `goal` int(11) NOT NULL,
-  `campaign_type` varchar(20) DEFAULT NULL,
-  `country` varchar(10) NOT NULL,
-  `currency` varchar(10) NOT NULL,
-  `currency_symbol` varchar(4) NOT NULL,
-  `deadline` datetime DEFAULT NULL,
-  `launched_at` datetime DEFAULT NULL,
-  `creator_name` varchar(50) NOT NULL,
-  `location` varchar(100) NOT NULL,
-  `location_url` varchar(150) NOT NULL,
-  `category` varchar(100) NOT NULL,
-  `short_url` varchar(100) NOT NULL,
-  `full_desc` text,
-  `hourly` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Часовая рассылка',
-  `daily` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Ежедневная рассылка',
-  `weekly` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Еженедельная рассылка',
-  `ref_page` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`project_id`),
-  KEY `country` (`country`),
-  KEY `deadline` (`deadline`),
-  KEY `launched_at` (`launched_at`),
-  KEY `location` (`location`),
-  KEY `category` (`category`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
 -- Структура таблицы `st_kickstarter_index`
 --
 
@@ -89,13 +53,25 @@ CREATE TABLE IF NOT EXISTS `st_kickstarter_index` (
 -- --------------------------------------------------------
 
 --
--- Структура таблицы `st_kickstarter_pages`
+-- Структура таблицы `st_newmail_table`
 --
 
-CREATE TABLE IF NOT EXISTS `st_kickstarter_pages` (
+CREATE TABLE IF NOT EXISTS `st_newmail_table` (
+  `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
+  `digest` varchar(10) NOT NULL,
+  PRIMARY KEY (`project_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `st_project_page`
+--
+
+CREATE TABLE IF NOT EXISTS `st_project_page` (
   `load_time` datetime NOT NULL COMMENT 'Время загрузки страницы с данными',
   `site_id` varchar(20) NOT NULL,
-  `project_id` varchar(255) NOT NULL COMMENT 'Часть ссылки на проект',
+  `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
   `name` varchar(100) NOT NULL,
   `blurb` varchar(255) NOT NULL,
   `goal` int(11) NOT NULL,
@@ -125,7 +101,10 @@ CREATE TABLE IF NOT EXISTS `st_kickstarter_pages` (
   KEY `launched_at` (`launched_at`),
   KEY `location` (`location`),
   KEY `category` (`category`),
-  KEY `site_id` (`site_id`)
+  KEY `site_id` (`site_id`),
+  KEY `hourly` (`hourly`),
+  KEY `daily` (`daily`),
+  KEY `weekly` (`weekly`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -137,6 +116,7 @@ CREATE TABLE IF NOT EXISTS `st_kickstarter_pages` (
 CREATE TABLE IF NOT EXISTS `st_users_category` (
   `ID` bigint(20) NOT NULL COMMENT 'ID пользователя',
   `site_id` varchar(20) NOT NULL,
+  `digest` varchar(10) NOT NULL,
   `category` varchar(100) DEFAULT NULL COMMENT 'Название категории',
   UNIQUE KEY `id_cat` (`ID`,`category`,`site_id`),
   KEY `category` (`category`),

@@ -1,7 +1,7 @@
 <?php namespace Sqobot;
 
 class KickstarterPageRow extends Row {
-  static $defaultTable = 'kickstarter_pages';
+  static $defaultTable = 'project_page';
   static $fields = array(
         'site_id',
         'load_time',

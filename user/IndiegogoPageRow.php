@@ -1,7 +1,7 @@
 <?php namespace Sqobot;
 
 class IndiegogoPageRow extends Row {
-  static $defaultTable = 'indiegogo_pages';
+  static $defaultTable = 'project_page';
   static $fields = array(
         'site_id',
         'load_time',
