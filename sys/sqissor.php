@@ -1,25 +1,35 @@
 <?php namespace Sqobot;
 
 abstract class Sqissor {
-  public $name;
+  public $name;         // Real sqissor class name
 
+  public $url;
+  public $options;
+  static $domain_name;
+          
   //= null not set, Queue
-  public $queue;
-
-  public $sliceXML = false;
-  public $transaction = true;
+  //public $queue;
   public $queued = array();
 
-  //= Sqissor that has successfully operated
-  static function dequeue(array $options = array()) {
+  // Process URL, return next URL, if any
+  // Occurred exceptions are logged and re-thrown.
+  // return mixed $callback's result
+  static function process($url, array $options = array()) {
     $self = get_called_class();
-
-    return Queue::pass(function ($queue) use ($self) {
-      return $self::factory($queue->site, $queue)->sliceURL($queue->url);
-    }, $options);
+    return rescue(
+      // Main function
+      function () use ($url, $options, $self) {
+        $result = $self::factory($options['site'], $options)->sliceURL($url);
+        return $result;
+      },
+      // Executed hen some error thrown
+      function ($e) use ($url, $options, $self) {
+        error("$self::process() has failed on url {$url} : ".exLine($e));
+      }
+    );
   }
 
-  static function factory($site, Queue $queue = null) {
+  static function factory($site, array $options = null) {
     $class = cfg("class $site", NS.'$');
 
     if (!$class) {
@@ -27,7 +37,7 @@ abstract class Sqissor {
     }
 
     if (class_exists($class)) {
-      return new $class($queue);
+      return new $class($options);
     } else {
       throw new ENoSqissor("Undefined Sqissor class [$class] of site [$site].".
                            "You can list custom class under 'class $site=YourClass'".
@@ -45,41 +55,22 @@ abstract class Sqissor {
     }
   }
 
-  static function make(Queue $queue = null) {
-    return new static($queue);
+  static function make(array $options = null) {
+    return new static($options);
   }
 
-  function __construct(Queue $queue = null) {
+  function __construct(array $options = null) {
     $this->name = static::siteNameFrom($this);
-    $this->queue = $queue;
+    $this->options = $options;
   }
 
   function sliceURL($url) {
-    if ($this->skipURL($url)) {
-      log("Skipping queued URL for [".$this->name."]: $url.");
-    } else {
-      $referrer = dirname($url);
-      strrchr($referrer, '/') === false and $referrer = null;
-      $this->slice(download($url, $referrer));
-    }
-
-    return $this;
+    $this->url = $url;
+    log("Process $url");
+    $referrer = dirname($url);
+    strrchr($referrer, '/') === false and $referrer = null;
+    return $this->slice(download($url, $referrer));
   }
-
-  //
-  // Overridable method used to determine if given $url has already been crawled
-  // (present in database). Used by ->sliceURL() to optimize and not crawl already
-  // processed pages - some items can be enqueued multiple times depending on
-  // the resource being crawled (links from different pages might lead to one place).
-  //
-  // Unless overriden always returns false meaning no URLs are skipped.
-  //
-  //* $url str  - URL to test database against. The same URL given to ->sliceURL()
-  //  and ->enqueue().
-  //
-  //= bool
-  //
-  function skipURL($url) { return false; }
 
   //
   // Processes given $data string. 'Processing' means that it's parsed and new
@@ -93,18 +84,8 @@ abstract class Sqissor {
   //
   //? slice('<!DOCTYPE html><html>...</html>')
   //
-  function slice($data, $transaction = null) {
-    if ( isset($transaction) ? $transaction : $this->transaction ) {
-      $self = $this;
-      atomic(function () use (&$data, $self) {
-        $self->slice($data, false);
-      });
-    } else {
-      $this->sliceXML and $data = parseXML($data);
-      $this->doSlice($data, $this->extra());
-    }
-
-    return $this;
+  function slice($data) {
+    return $this->doSlice($data, $this->options);
   }
 
   //
@@ -121,13 +102,20 @@ abstract class Sqissor {
   protected abstract function doSlice($data, array $extra);
 
   //
+  // Return associaed domain name;
+  //
+  function domain() {
+      return static::$domain_name;
+  }
+  
+  //
   // Returns extra data associated with this queue item. See ->enqueue().
   // Empty array is returned if no extra was assigned.
   //
   //= array
   //
   function extra() {
-    return $this->queue ? (array) $this->queue->extra() : array();
+    return $this->options;
   }
 
   //
@@ -140,6 +128,7 @@ abstract class Sqissor {
   //= null  if no queue item is assigned and $must is false
   //= Queue instance - $this->queue
   //
+  /*
   function queue($must = true) {
     if ($this->queue) {
       return $this->queue;
@@ -147,7 +136,7 @@ abstract class Sqissor {
       throw new ESqissor($this, "{$this->name} expects an assigned ->queue.");
     }
   }
-
+  */
   //
   // Places a new item into the queue.
   //
@@ -156,26 +145,20 @@ abstract class Sqissor {
   //  Dots can be used to create namespaces and group similar parsers together.
   //  The actual class name responding to such identifier is typically of form
   //  'Sqobot\\S' + pretty$site) where pretty() makes 'foo.bar.bar' => 'FooBarBaz'.
-  //* $extra array  - extra data to associate with the new queue item. It's passed
-  //  to $site verbatim. Useful when more than one page is needed to be parsed
-  //  in order to construct the full entity (Pool item) - $extra can accumulate
-  //  such data until the final $site handler brings them all together and
-  //  constructs the actual Pool item.
   //
-  //? enqueue('http://example.com/post/123456', 'example.parser', array('a' => 'b'))
+  //? enqueue('http://example.com/post/123456', 'example.parser')
   //      // Enqueues given URL to be handled by 'example.parser' which usually
-  //      // is Sqobot\SExampleParser class. $extra array is accessible from within
-  //      // its instance by $this->extra().
+  //      // is Sqobot\SExampleParser class.
   //
-  function enqueue($url, $site, array $extra = array()) {
-    $item = Queue::make(Queue::hop($url, $site))
-      ->extra($extra)
-      ->createIgnore();
+  /*
 
-    // $id will be 0 if this url + site combination is already enqueued.
-    $item->id and $this->queued[] = $item;
-    return $this;
+  function enqueue($url, $site) {
+    $item = compact('url', 'site');
+    $this->queued[] = $item;
   }
+   
+   */
+
 
   //
   // Matches given $regexp against string $str optionally returning pocket of given

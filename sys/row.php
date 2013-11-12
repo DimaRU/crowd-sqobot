@@ -61,17 +61,14 @@ class Row {
     $bind = $this->sqlFields();
     unset($bind['id']);
 
-    if (Atoms::enabled('create')) {
-      $id = Atoms::addRow($this, $bind, $method);
-    } else {
-      list($fields, $bind) = S::divide($bind);
+    list($fields, $bind) = S::divide($bind);
 
-      $sql = "$sqlVerb INTO `".$this->table().'`'.
-             ' (`'.join('`, `', $fields).'`) VALUES'.
-             ' ('.join(', ', S($bind, '"??"')).')';
+    $sql = "$sqlVerb INTO `".$this->table().'`'.
+           ' (`'.join('`, `', $fields).'`) VALUES'.
+           ' ('.join(', ', S($bind, '"??"')).')';
 
-      $id = exec($sql, $bind);
-    }
+    $id = exec($sql, $bind);
+    
 
     in_array('id', static::$fields) and $this->id = $id;
     return $this;
@@ -79,17 +76,12 @@ class Row {
 
   // See update(), updateWith(), updateIgnore() and others.
   protected function doUpdate($method, $sqlVerb) {
-    if (Atoms::enabled('update')) {
-      Atoms::addRow($this, $bind, $method);
-    } else {
-      $fields = S(static::$fields, '"`?` = ?"');
-      $bind = array_values($this->sqlFields());
+    $fields = S(static::$fields, '"`?` = ?"');
+    $bind = array_values($this->sqlFields());
 
-      $sql = "$sqlVerb `".$this->table().'` SET `'.join(', ', $fields).
-             ' WHERE site = :site AND site_id = :site_id';
-      exec($sql, $bind);
-    }
-
+    $sql = "$sqlVerb `".$this->table().'` SET `'.join(', ', $fields).
+           ' WHERE site = :site AND site_id = :site_id';
+    exec($sql, $bind);
     return $this;
   }
 

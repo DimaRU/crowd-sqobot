@@ -5,19 +5,20 @@ class Download extends \Downwind {
     return strftime( opt('dlLog', cfg('dlLog')) );
   }
 
+  // Create log record
   static function summarize($url, $context, $file = null) {
     $meta = $file ? stream_get_meta_data($file) : array();
     $options = stream_context_get_options($context);
 
     $separ = '+'.str_repeat('-', 73)."\n";
-    $result = "$separ$url\n";
+    $result = $separ.$url."\n";
 
     if ($meta and $meta['uri'] !== $url) {
       $result .= "Stream URL differs: $meta[uri]\n";
     }
-
     $result .= "$separ\n";
 
+    // Stream type
     if (!$meta) {
       $result .= "Stream metadata is unavailable.\n\n";
     } else {
@@ -35,6 +36,7 @@ class Download extends \Downwind {
       if ($filters or $flags) { $result .= "\n"; }
     }
 
+    // Context options
     if (!$options) {
       $result .= "Stream context options are unavailable\n\n";
     } else {
@@ -53,6 +55,7 @@ class Download extends \Downwind {
       $result .= "Context options:\n\n".static::joinIndent($options)."\n\n";
     }
 
+    // Response
     if ($data = &$meta['wrapper_data']) {
       isset($data['headers']) and $data = $headers['headers'];
       $data and $result .= "Response:\n\n".static::joinHeaders($data)."\n";
@@ -89,8 +92,9 @@ class Download extends \Downwind {
   }
 
   static function randomAgent() {
-    isset(static::$agents) or static::$agents = static::loadAgents();
-    return parent::randomAgent();
+//    isset(static::$agents) or static::$agents = static::loadAgents();
+//    return parent::randomAgent();
+      return cfg('dl useragent');
   }
 
   static function loadAgents() {
