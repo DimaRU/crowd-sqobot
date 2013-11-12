@@ -65,7 +65,7 @@ class TaskScan extends Task {
   //
   // Scan news from site
   //  
-  function do_(array $args = null) {
+  function do_new(array $args = null) {
     if ($args === null or !opt(0)) {
       return print 'scan SITENAME';
     }

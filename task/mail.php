@@ -26,7 +26,7 @@ class TaskMail extends Task {
     $sql = "SELECT $page_table.site_id, $page_table.category, $page_table.name, $page_table.short_url, $page_table.blurb\n"
     . "FROM ($subs_table INNER JOIN $page_table ON ($subs_table.category = $page_table.category) "
     . "AND ($subs_table.site_id = $page_table.site_id)) INNER JOIN $newmail_table ON $page_table.project_id = $newmail_table.project_id\n"
-    . "WHERE $subs_table.ID = $id AND $newmail_table.digest = \"$digest\" AND $subs_table.digest = \"$digest\"\n"
+    . "WHERE $subs_table.ID = $id AND $newmail_table.digest = \"$digest\"\n"
     . "ORDER BY $page_table.site_id, $page_table.category";
     $stmt = exec($sql);
     
@@ -37,14 +37,14 @@ class TaskMail extends Task {
     }
     $stmt->closeCursor();
 
-    $mailer->addSubject($digest);
+    $mailer->addSubject(ucfirst($digest)." new projects digest.");
     $mailer->addHeader($digest);
     $mailer->addFooter($digest);
     $mailer->send();
   }
     
   // Email new projects filered by category  
-  function do_(array $args = null) {
+  function do_new(array $args = null) {
     $subs_table = static::table(static::$subs_table);
     $page_table = static::table(static::$page_table);
     $newmail_table = static::table(static::$newmail_table);
@@ -68,7 +68,7 @@ class TaskMail extends Task {
     $stmt = exec($sql);
     
     // Create users list
-    $sql = "SELECT wp_users.ID, wp_users.user_email, wp_users.display_name FROM wp_users";
+    $sql = "SELECT wp_users.ID, wp_users.user_email, wp_users.display_name FROM wp_users WHERE wp_users.digest = \"$digest\"";
     $stmt = exec($sql);
 
     while($row = $stmt->fetch()) {
@@ -93,5 +93,34 @@ class TaskMail extends Task {
     log("Done emailing $digest digest. ".
          sprintf('This took %1.2f sec.', $duration));
   }
-  
+
+  function do_stat(array $args = null) {
+    $page_table = static::table(static::$page_table);
+
+    if ($args === null or !opt(1)) {
+      return print 'mail stat {hourly|daily|weekly] EMAIL}';
+    }
+    $digest = opt(0);
+    $email = opt(1);
+    
+    if (!in_array($digest, array('hourly', 'daily', 'weekly')))
+            return print 'Invalid argument. Only hourly|daily|weekly allowed.'. PHP_EOL;
+    
+    $mailer = new NewsMailer($email, "");
+
+    $sql = "SELECT $page_table.site_id, $page_table.category, Count($page_table.category) AS `count`\n"
+    . "FROM $page_table\n"
+    . "WHERE $page_table.$digest = 0\n"
+    . "GROUP BY $page_table.site_id, $page_table.category";
+    $stmt = exec($sql);
+    $stats = $stmt->fetchAll();
+
+    foreach ($stats as $row) {
+      $mailer->addStatLine($row);
+    }
+    $mailer->addSubject(ucfirst($digest)." stats by site and category.");
+    $mailer->addHeader($digest);
+    $mailer->addFooter($digest);
+    $mailer->send();
+  }  
 }

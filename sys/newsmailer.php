@@ -58,9 +58,18 @@ class NewsMailer {
         $this->addLine($s);
         $this->contentlines++;
     }
+
+    // Add one line with stats (category, count)
+    function addStatLine($row) {
+        $this->addSiteHeader($row->site_id);
+        
+        $s = '<div><span style="width: 140px; float: left;">'.$row->category.'&nbsp;</span>'.$row->count.'</div>';
+        $this->addLine($s);
+        $this->contentlines++;
+    }
     
-    function addSubject($digest) {
-        $this->message->setSubject(ucfirst($digest)." new projects digest.");
+    function addSubject($subject) {
+        $this->message->setSubject($subject);
     }
     
     function addHeader($digest) {

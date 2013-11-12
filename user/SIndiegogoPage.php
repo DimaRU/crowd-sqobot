@@ -69,13 +69,20 @@ class SIndiegogoPage extends Sqissor {
         $nodes = $finder->query('.//div[@class="fl information"]/a');
         $row['creator_name'] = $nodes->item(0)->nodeValue;
 
-        // Location
-        // <span class="location"><a href="/projects?filter_city=London&amp;cGB&amp;filter_text=">London, United Kingdom</a>
-        $nodes = $finder->query('.//span[@class="location"]/a');
-        $row['location_url'] = $nodes->item(0)->getAttribute("href");
-        $row['location'] = $nodes->item(0)->nodeValue;
-        $parts = explode("&", $nodes->item(0)->getAttribute("href"));
-        $row['country'] = substr($parts[1], 20);    // skip 'filter_country=CTRY_'
+        if ($row['name']) {
+            // Location
+            // <span class="location"><a href="/projects?filter_city=London&amp;cGB&amp;filter_text=">London, United Kingdom</a>
+            $nodes = $finder->query('.//span[@class="location"]/a');
+            $row['location_url'] = $nodes->item(0)->getAttribute("href");
+            $row['location'] = $nodes->item(0)->nodeValue;
+            $parts = explode("&", $nodes->item(0)->getAttribute("href"));
+            $row['country'] = substr($parts[1], 20);    // skip 'filter_country=CTRY_'
+        }
+        else {
+            $row['location_url'] = "";
+            $row['location'] = "";
+            $row['country'] = "";
+        }
 
         // ...duration: November 04, 2013 - December 27, 2013 (11:59pm PT).
         $nodes = $finder->query('.//p[@class="funding-info"]');
