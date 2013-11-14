@@ -300,39 +300,6 @@ function dbImport($sqls) {
   return $sum;
 }
 
-function atomic($func) {
-  // Fatal Errors are handled by Atoms so no rolling back on them.
-  $atomate = false;     //Atoms::enabled() and Atoms::enter();
-
-  if (db()->inTransaction()) {
-    try {
-      $result = call_user_func($func);
-      //$atomate and Atoms::commit();
-      return $result;
-    } catch (Exception $e) {
-      //$atomate and Atoms::rollback();
-      throw $e;
-    }
-  } else {
-    db()->beginTransaction();
-
-    return rescue(
-      function () use ($func, $atomate) {
-        $result = call_user_func($func);
-        db()->commit();
-        //$atomate and Atoms::commit();
-        return $result;
-      },
-      function ($e, $fatal) use ($atomate) {
-        //!$fatal and $atomate and Atoms::rollback();
-        // when this exception handler is called by a Fatal Error transaction
-        // has already been rolled back by PHP.
-        db()->inTransaction() and db()->rollBack();
-      }
-    );
-  }
-}
-
 function prep($sql, $bind = array()) {
   $stmt = db()->prepare($sql);
 
