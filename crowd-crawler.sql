@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Хост: localhost
--- Время создания: Ноя 10 2013 г., 23:12
+-- Время создания: Дек 01 2013 г., 16:41
 -- Версия сервера: 5.1.69
 -- Версия PHP: 5.3.3
 
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS `st_kickstarter_index` (
 CREATE TABLE IF NOT EXISTS `st_newmail_table` (
   `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
   `digest` varchar(10) NOT NULL,
-  PRIMARY KEY (`project_id`)
+  UNIQUE KEY `project_id` (`project_id`,`digest`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -116,11 +116,8 @@ CREATE TABLE IF NOT EXISTS `st_project_page` (
 CREATE TABLE IF NOT EXISTS `st_users_category` (
   `ID` bigint(20) NOT NULL COMMENT 'ID пользователя',
   `site_id` varchar(20) NOT NULL,
-  `digest` varchar(10) NOT NULL,
-  `category` varchar(100) DEFAULT NULL COMMENT 'Название категории',
-  UNIQUE KEY `id_cat` (`ID`,`category`,`site_id`),
-  KEY `category` (`category`),
-  KEY `ID` (`ID`)
+  `category` varchar(100) NOT NULL COMMENT 'Название категории',
+  UNIQUE KEY `id_cat` (`ID`,`category`,`site_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -140,6 +137,7 @@ CREATE TABLE IF NOT EXISTS `wp_users` (
   `user_activation_key` varchar(60) NOT NULL DEFAULT '',
   `user_status` int(11) NOT NULL DEFAULT '0',
   `display_name` varchar(250) NOT NULL DEFAULT '',
+  `digest` varchar(10) NOT NULL,
   PRIMARY KEY (`ID`),
   KEY `user_login_key` (`user_login`),
   KEY `user_nicename` (`user_nicename`)

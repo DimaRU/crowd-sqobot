@@ -201,11 +201,12 @@ class Downwind {
   }
 
   //= str HTML within <body> or entire response if no such tag
-  function docBody() {
+/*  function docBody() {
     $reply = $this->fetchData();
     preg_match('~<body>(.*)</body>~uis', $reply, $match) and $reply = $match[1];
     return trim($reply);
   }
+  */
 
   function createContext() {
     $options = array('http' => $this->contextOptions());
