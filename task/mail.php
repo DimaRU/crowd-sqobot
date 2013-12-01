@@ -37,6 +37,8 @@ class TaskMail extends Task {
     }
     $stmt->closeCursor();
 
+    if ($mailer->getContentLines() == 0) return;
+    
     $mailer->addSubject(ucfirst($digest)." new projects digest.");
     $mailer->addHeader($digest);
     $mailer->addFooter($digest);

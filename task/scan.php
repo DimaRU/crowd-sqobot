@@ -46,7 +46,11 @@ class TaskScan extends Task {
    
     foreach($projects as $project) {
         $options['ref_page'] = $project->ref_page;
-        Sqissor::process("http://" . $project->project_id, $options);
+        try {
+            Sqissor::process("http://" . $project->project_id, $options);
+        } catch (\Exception $e) {
+            echo 'Exception: ', exLine($e), PHP_EOL;
+        }
     }
     $duration = microtime(true) - $started;
     log("Done pages scan $site, $pages pages. ".
@@ -60,6 +64,12 @@ class TaskScan extends Task {
     
     $count = exec($sql);
     log("$count pages deleted from index.");
+    
+    // Total cleanup
+    // TODO: save bad pages for later analyses
+   $sql = "TRUNCATE $index_table";
+   exec($sql);
+   
   }
   
   //
@@ -82,13 +92,8 @@ class TaskScan extends Task {
       echo 'Exception: ', exLine($e), PHP_EOL;
       if (!empty($args['no-ignore'])) { return; }
     }
-    
-    try {
-      $this->scan_pages($site_page, $index_table, $page_table);
-    } catch (\Exception $e) {
-      echo 'Exception: ', exLine($e), PHP_EOL;
-      if (!empty($args['no-ignore'])) { return; }
-    }
+   
+    $this->scan_pages($site_page, $index_table, $page_table);
   }
       
   //

@@ -25,6 +25,9 @@ class NewsMailer {
     $this->message->setTo(array($address => $name));
     
   }
+  function getContentLines() {
+      return $this->contentlines;
+  }
     //
     function addLine($s) {
         $this->body .= $s . PHP_EOL;

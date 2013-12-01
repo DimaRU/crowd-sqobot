@@ -92,19 +92,7 @@ class Download extends \Downwind {
   }
 
   static function randomAgent() {
-//    isset(static::$agents) or static::$agents = static::loadAgents();
-//    return parent::randomAgent();
       return cfg('dl useragent');
-  }
-
-  static function loadAgents() {
-    if (is_file($file = 'agents.txt')) {
-      $list = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-      return array_filter(array_map('trim', $list));
-    } else {
-      log("No User-Agents file $file - use it for better cloaking.");
-      return array();
-    }
   }
 
   function __construct($url, $headers = array()) {
