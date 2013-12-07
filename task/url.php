@@ -24,7 +24,7 @@ class TaskUrl extends Task {
     if ($to = &$args['to']) {
       is_string($to) or $to = 'out/'.parse_url($url, PHP_URL_HOST).'.html';
 
-      if (!is_int(file_put_contents($to))) {
+      if (!is_int(file_put_contents($to, $data))) {
         return print "Cannot write data to [$to].";
       }
     } else {

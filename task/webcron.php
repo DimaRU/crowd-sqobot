@@ -30,11 +30,12 @@ class TaskWebcron extends Task {
 
   static function mailTo($addr, $subject, $body) {
     $host = Web::info('HTTP_HOST') ?: dirname(S::first(get_included_files()));
-
+/*
     $mail = new \MiMeil($addr, "$subject — Sqobot at $host");
     $mail->from = cfg('mailFrom');
     $mail->body('html', Web::template('mail', compact('body')));
     $mail->send() or warn("Problem sending e-mail to $addr (\"$subject\").");
+ */
   }
 
   function do_(array $args = null) {
