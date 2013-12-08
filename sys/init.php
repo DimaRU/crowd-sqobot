@@ -68,17 +68,6 @@ spl_autoload_register(function ($class) {
   warn("Cannot autoload class [$class] from either of these paths:".
        join("\n  ", S::prepend($files, '')));
 });
-/*
-hook('class MiMeil', function () {
-  \MiMeil::$onEvent = function ($event, $args) {
-    return fire("mail $event", $args);
-  };
-
-  \MiMeil::registerEventsUsing(function ($event, $callback) {
-    hook("mail $event", $callback);
-  });
-});
- */
 
 register_shutdown_function(function () {
   $chdir = opt('chdir', ROOT) and chdir($chdir);

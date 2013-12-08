@@ -2,36 +2,46 @@
 
 class Download {
   static $maxFetchSize = 20971520;      // 20 MiB
+  static $curl;                         // Curl handle. Do not close!!!
 
   public $contextOptions = array();
   public $url;
   public $headers;
 
-  public $handle;
-  public $responseHeaders;
+  public $responseHeaders = array();
   public $reply;
 
   static function it($url, $headers = array()) {
-    return static::make($url, $headers)->fetchData();
+    return static::make()->setContext($url, $headers)->read()->reply;
   }
 
-  static function make($url, $headers = array()) {
-    return new static($url, $headers);
+  static function make() {
+    return new static();
   }
 
-  function __construct($url, $headers = array()) {
-    $this->url($url);
-
-    is_array($headers) or $headers = array('referer' => $headers);
-    $this->headers = array_change_key_case($headers);
-
+  function __construct() {
+    if (!Download::$curl) {
+        Download::$curl = curl_init();
+    }
+    if (!Download::$curl) {
+          throw new RuntimeException("Cannot init curl library.");
+    }
     $this->contextOptions = array(
-      'follow_location'   => cfg('dlRedirects') > 0,
-      'max_redirects'     => max(0, (int) cfg('dlRedirects')),
-      'protocol_version'  => cfg('dlProtocol'),
-      'timeout'           => (float) cfg('dlTimeout'),
-      'ignore_errors'     => !!cfg('dlFetchOnError'),
-    );
+        CURLOPT_RETURNTRANSFER => true,                             // return web page
+        CURLOPT_HEADER         => false,                            // don't return headers
+        CURLOPT_FOLLOWLOCATION => cfg('dlRedirects') > 0,           // follow redirects
+        CURLOPT_MAXREDIRS      => max(0, (int) cfg('dlRedirects')), // stop after 10 redirects
+        CURLOPT_FAILONERROR    => !!cfg('dlFetchOnError'),
+        CURLOPT_AUTOREFERER    => true,                             // set referer on redirect
+        CURLOPT_CONNECTTIMEOUT => 120,                              // timeout on connect
+        CURLOPT_TIMEOUT        => (float) cfg('dlTimeout'),         // timeout on response
+        CURLOPT_SSL_VERIFYHOST => false,                            // don't verify ssl
+        CURLOPT_SSL_VERIFYPEER => false,                            //
+        CURLOPT_VERBOSE        => true,                             //
+        CURLOPT_ENCODING       => "",                               // Accept all encoding
+        CURLINFO_HEADER_OUT    => true,                             // Report req headers in info
+        CURLOPT_HEADERFUNCTION => array($this, '_set_header_callback')   //return the HTTP Response header using the callback function readHeader
+    ); 
   }
 
   function __destruct() {
@@ -55,70 +65,54 @@ class Download {
     return parse_url($this->url, $part);
   }
 
-  function open() {
-    if (!$this->handle) {
-      $context = $this->createContext();
-      $this->handle = fopen($this->url, 'rb', false, $context);
-
-      $context and $this->opened($context, $this->handle);
-
-      if (!$this->handle) {
-        throw new RuntimeException("Cannot fopen({$this->url}).");
-      }
-
-      $this->responseHeaders = (array) stream_get_meta_data($this->handle);
-    }
-
+  function setContext($url, $headers = array()) {
+    $this->url($url);
+    is_array($headers) or $headers = array('referer' => $headers);
+    $this->headers = array_change_key_case($headers);
+    curl_setopt_array(Download::$curl, $this->contextOptions);
+    curl_setopt(Download::$curl, CURLOPT_HTTPHEADER, $this->normalizeHeaders());
+    curl_setopt(Download::$curl, CURLOPT_URL, $this->url);
     return $this;
   }
 
+  function read() {
+    //$limit = min(static::$maxFetchSize, PHP_INT_MAX);
+    $this->reply = curl_exec(Download::$curl);
+    $this->write_log();
+    if ($this->reply === false) {
+      throw new RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
+    }
+    return $this;
+  }
+
+  function close() {
+    $h = Download::$curl and curl_close($h);
+    Download::$curl = null;
+    return $this;
+  }
+  
+  private function _set_header_callback($ch, $header) {
+        $this->responseHeaders[] = $header;
+        return strlen($header);
+  } 
+
   //* $context resource of stream_context_create()
   //* $file resource of fopen(), false if failed
-  protected function opened($context, $file = null) {
+  protected function write_log() {
     if ($log = static::logFile()) {
       if (is_file($log) and filesize($log) >= S::size(cfg('dlLogMax'))) {
         file_put_contents($log, '', LOCK_EX);
       }
 
       S::mkdirOf($log);
-      $info = static::summarize($this->url, $context, $file);
+      $info = static::summarize($this->url);
       $ok = file_put_contents($log, "$info\n\n", LOCK_EX | FILE_APPEND);
       $ok or warn("Cannot write to dlLog file [$log].");
     }
   }
 
-  function read() {
-    $limit = min(static::$maxFetchSize, PHP_INT_MAX);
-
-    $this->reply = stream_get_contents($this->open()->handle, $limit, -1);
-    if (!is_string($this->reply)) {
-      throw new RuntimeException("Cannot get remote stream contents of [{$this->url}].");
-    }
-
-    return $this;
-  }
-
-  function close() {
-    $h = $this->handle and fclose($h);
-    $this->handle = null;
-    return $this;
-  }
-
-  function fetchData() {
-    return $this->read()->close()->reply;
-  }
-
-  function createContext() {
-    $options = array('http' => $this->contextOptions());
-    return stream_context_create($options);
-  }
-
-  function contextOptions() {
-    $options = $this->contextOptions;
-    return array('header' => $this->normalizeHeaders()) + $options;
-  }
-
-//= array of scalar like 'Accept: text/html'
+  
+  //= array of scalar like 'Accept: text/html'
   function normalizeHeaders() {
     foreach (get_class_methods($this) as $func) {
       if (substr($func, 0, 7) === 'header_') {
@@ -165,6 +159,10 @@ class Download {
     return cfg('dl charsets');
   }
 
+  function header_accept_encoding($str = '') {
+    return cfg('dl encoding');
+  }
+
   function header_accept($str = '') {
     return cfg('dl mimes');
   }
@@ -181,67 +179,45 @@ class Download {
     return 'http://'.$this->urlPart(PHP_URL_HOST).'/';
   }
   
-  
-  
-    static function logFile() {
+  static function logFile() {
     return strftime( opt('dlLog', cfg('dlLog')) );
   }
 
   // Create log record
-  static function summarize($url, $context, $file = null) {
-    $meta = $file ? stream_get_meta_data($file) : array();
-    $options = stream_context_get_options($context);
+  function summarize($url) {
+    $meta = curl_getinfo(Download::$curl);
 
     $separ = '+'.str_repeat('-', 73)."\n";
     $result = $separ.$url."\n";
 
-    if ($meta and $meta['uri'] !== $url) {
-      $result .= "Stream URL differs: $meta[uri]\n";
+    if ($meta and $meta['url'] !== $url) {
+      $result .= "Stream URL differs: $meta[url]\n";
     }
+
     $result .= "$separ\n";
-
-    // Stream type
-    if (!$meta) {
-      $result .= "Stream metadata is unavailable.\n\n";
-    } else {
-      $result .= "$meta[wrapper_type] wrapper, $meta[stream_type] stream\n\n";
-
-      if ($filters = &$meta['filters']) {
-        $result .= '  Filters: '.join(', ', $filters)."\n";
-      }
-
-      $flags = array();
-      empty($meta['eof']) or $flags[] = 'At EOF';
-      empty($meta['timed_out']) or $flags[] = 'Timed out';
-      $flags and $result .= '  State: '.join(', ', $flags)."\n";
-
-      if ($filters or $flags) { $result .= "\n"; }
-    }
-
-    // Context options
-    if (!$options) {
-      $result .= "Stream context options are unavailable\n\n";
-    } else {
-      $options = reset($options);
-
-      if ($headers = &$options['header']) {
+    
+    // Request
+    if (isset($meta['request_header'])) {
+        $headers = explode("\r\n", $meta['request_header']);
+        unset($headers[0]);
         $result .= "Request:\n\n".static::joinHeaders($headers)."\n\n";
-        unset($options['header']);
-      }
-
-      if ($version = &$options['protocol_version']) {
-        $version = sprintf('%1.1f', $version);
-      }
-
-      ksort($options);
-      $result .= "Context options:\n\n".static::joinIndent($options)."\n\n";
     }
+
+    // TODO: stats
+    $stats = array_intersect_key(
+        $meta, 
+        array_flip(array(
+            'http_code',
+            'total_time', 
+            'namelookup_time', 
+            'connect_time',
+            'starttransfer_time'))
+    );
+    
+    $result .= "Stats:\n\n".static::joinIndent($stats)."\n\n";
 
     // Response
-    if ($data = &$meta['wrapper_data']) {
-      isset($data['headers']) and $data = $headers['headers'];
-      $data and $result .= "Response:\n\n".static::joinHeaders($data)."\n";
-    }
+    $this->responseHeaders and $result .= "Response:\n\n".static::joinHeaders($this->responseHeaders)."\n";
 
     return $result;
   }
@@ -250,10 +226,14 @@ class Download {
     $keyValues = array();
 
     foreach ($list as $value) {
-      if (!is_string($value) or strrchr($value, ':') === false) {
-        $keyValues[] = $value;
+      $v = trim($value);
+      if ($v == "")          continue;
+      if (!is_string($v) or strrchr($v, ':') === false) {
+        $keyValues[] = $v;
       } else {
-        $keyValues[strtok($value, ':')] = trim(strtok(null));
+        $key = strtok($v, ':');
+        isset($keyValues[$key]) and $key .= " ";
+        $keyValues[$key] = trim(strtok(null));
       }
     }
 
@@ -269,7 +249,7 @@ class Download {
     }
 
     return join("\n", S($keyValues, function ($value, $key) use ($indent, $length) {
-      return $indent.str_pad("$key:", $length)."$value";
+      return $indent.str_pad(trim($key).":", $length)."$value";
     }));
   }
 
