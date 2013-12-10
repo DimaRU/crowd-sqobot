@@ -14,18 +14,7 @@ class SKickstarterPage extends Sqissor {
                      'ref_page' => isset($extra['ref_page']) ? $extra['ref_page'] : null
             );
 
-        // Clean up html thru tydy lib
-        $config = array('indent' => false,
-                   'output-html' => true,
-                   'wrap'        => 0);
-        $tidy = new \tidy;
-        $clean_data = $tidy->repairString($data, $config, 'utf8');
-
-        $html = new \DOMDocument();
-        $html->validateOnParse = true;
-        $cur = libxml_use_internal_errors(true);
-        $html->loadHTML($clean_data);
-        libxml_use_internal_errors($cur);
+        $this->initDom($data);
 
         //$htmlstr = 'window.current_project = "{ .... }";1234';
         $pos1 = strpos($data, 'window.current_project');
@@ -36,27 +25,19 @@ class SKickstarterPage extends Sqissor {
         $pdata = json_decode($json, true);
         $row['project_json'] = $json;
 
-                
-        $finder = new \DomXPath($html);
-
         //<div class="full-description">
-        $nodes = $finder->query('.//div[@class="full-description"]');
-        $row['full_desc'] = $this->htmlToText($nodes->item(0)->nodeValue);
+        $row['full_desc'] = $this->htmlToText($this->queryValue('.//div[@class="full-description"]'));
 
         /*
         //<div id="risks">
-        $nodes = $finder->query('.//div[@id="risks"]');
-        echo strip_tags($nodes->item(0)->nodeValue);
+        echo strip_tags($this->queryValue('.//div[@id="risks"]'));
          */
 
         // <meta meta content="-72.198562622071" property="kickstarter:location:longitude">
         // <meta content="41.333982467652" property="kickstarter:location:latitude">
-        $nodes = $finder->query('.//meta[@property="kickstarter:location:latitude"]');
-        $row['latitude'] = $nodes->item(0)->getAttribute("content");
-        $nodes = $finder->query('.//meta[@property="kickstarter:location:longitude"]');
-        $row['longitude'] = $nodes->item(0)->getAttribute("content");
+        $row['latitude'] = $this->queryAttribute('.//meta[@property="kickstarter:location:latitude"]', "content");
+        $row['longitude'] = $this->queryAttribute('.//meta[@property="kickstarter:location:longitude"]', "content");
 
-        
         $row['project_id'] = strstr($pdata['urls']['web']['project'], $this->domain());
         $row['name'] = $pdata['name'];
         $row['blurb'] = $pdata['blurb'];

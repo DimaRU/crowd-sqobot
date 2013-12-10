@@ -3,7 +3,7 @@
 class TaskUrl extends Task {
   function do_dl(array $args = null) {
     if ($args === null or !opt(0)) {
-      return print 'url dl URL [HEADER[=VALUE] [...]] --to[=out/HOST.html]';
+      return print 'url dl URL [HEADER[=VALUE] [...]] --to[=out/HOST.html] --tidy';
     }
 
     $all = opt();
@@ -15,11 +15,21 @@ class TaskUrl extends Task {
       if (strrchr($str, '=') === false) {
         $headers[$str][] = 1;
       } else {
-        $headers[strtok($str, '=')][] = strtok(null);
+        $headers[strtok($str, '=')] = strtok(null);
       }
     }
 
     $data = download($url, $headers);
+    
+    if (!empty($args['tidy'])) {
+        static $config = array('indent' => false,
+                               'preserve-entities' => true,
+                               'output-html' => true,
+                               'wrap'        => 0);
+        $tidy = new \tidy;
+        $data = $tidy->repairString($data, $config, 'utf8');
+        unset($tidy);
+    }
 
     if ($to = &$args['to']) {
       is_string($to) or $to = 'out/'.parse_url($url, PHP_URL_HOST).'.html';
