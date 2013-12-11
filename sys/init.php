@@ -3,8 +3,8 @@
 define(__NAMESPACE__.'\\NS', __NAMESPACE__.'\\');
 defined(NS.'ROOT') or define(NS.'ROOT', dirname(__DIR__).'/');
 defined(NS.'USER') or define(NS.'USER', ROOT);
-define(NS.'VERSION', '1.0a');
-define(NS.'HOMEPAGE', 'https://github.com/ProgerXP/Sqobot');
+define(NS.'VERSION', '0.1');
+define(NS.'HOMEPAGE', 'http://crowd-sqobot.bdm.org.ru');
 
 error_reporting(-1);
 ini_set('display_errors', true);
@@ -67,16 +67,6 @@ spl_autoload_register(function ($class) {
 
   warn("Cannot autoload class [$class] from either of these paths:".
        join("\n  ", S::prepend($files, '')));
-});
-
-hook('class MiMeil', function () {
-  \MiMeil::$onEvent = function ($event, $args) {
-    return fire("mail $event", $args);
-  };
-
-  \MiMeil::registerEventsUsing(function ($event, $callback) {
-    hook("mail $event", $callback);
-  });
 });
 
 register_shutdown_function(function () {

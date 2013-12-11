@@ -6,11 +6,11 @@ abstract class Sqissor {
   public $url;
   public $options;
   static $domain_name;
+  
+  // DOMDocument processing
+  public $finder;
+  public $htmldom;
           
-  //= null not set, Queue
-  //public $queue;
-  public $queued = array();
-
   // Process URL, return next URL, if any
   // Occurred exceptions are logged and re-thrown.
   // return mixed $callback's result
@@ -117,48 +117,6 @@ abstract class Sqissor {
   function extra() {
     return $this->options;
   }
-
-  //
-  // Returns a queued item this Sqissor is processing. Might be unset if it's
-  // called directly; typically a Sqissor instance is created by pulling an item
-  // from database queue (see Queue).
-  //
-  //* $must bool  - errors if true and no queue item is assigned, otherwise returns null.
-  //
-  //= null  if no queue item is assigned and $must is false
-  //= Queue instance - $this->queue
-  //
-  /*
-  function queue($must = true) {
-    if ($this->queue) {
-      return $this->queue;
-    } elseif ($must) {
-      throw new ESqissor($this, "{$this->name} expects an assigned ->queue.");
-    }
-  }
-  */
-  //
-  // Places a new item into the queue.
-  //
-  //* $url str      - URL to be crawled.
-  //* $site str     - Sqissor-descendant class identifier used to process given $url.
-  //  Dots can be used to create namespaces and group similar parsers together.
-  //  The actual class name responding to such identifier is typically of form
-  //  'Sqobot\\S' + pretty$site) where pretty() makes 'foo.bar.bar' => 'FooBarBaz'.
-  //
-  //? enqueue('http://example.com/post/123456', 'example.parser')
-  //      // Enqueues given URL to be handled by 'example.parser' which usually
-  //      // is Sqobot\SExampleParser class.
-  //
-  /*
-
-  function enqueue($url, $site) {
-    $item = compact('url', 'site');
-    $this->queued[] = $item;
-  }
-   
-   */
-
 
   //
   // Matches given $regexp against string $str optionally returning pocket of given
@@ -336,4 +294,47 @@ abstract class Sqissor {
   function htmlToText($html, $charset = 'utf-8') {
     return html_entity_decode(strip_tags($html), ENT_QUOTES, $charset);
   }
-}
+
+  // Init DOMDocument processing
+  function initDom($data) {
+    /*  
+    // Clean up html thru tydy lib
+    static $config = array('indent' => false,
+               'output-html' => true,
+               'wrap'        => 0);
+    $tidy = new \tidy;
+    $data = $tidy->repairString($data, $config, 'utf8');
+    unset($tidy);
+     */
+
+    $this->htmldom = new \DOMDocument();
+    //$this->htmldom->validateOnParse = true;
+    $this->htmldom->recover = true;
+    $this->htmldom->strictErrorChecking = false;
+    $cur = libxml_use_internal_errors(true);
+    $this->htmldom->loadHTML($data);
+    libxml_use_internal_errors($cur);
+    $this->finder = new \DomXPath($this->htmldom);
+  }
+  
+  function querySafe($expression) {
+      $nodes = $this->finder->query($expression);
+      if ($nodes->length == 0) {
+          throw new ESqissor($this, "Not found expression '$expression'.");
+      }
+      return $nodes;
+  }
+  
+  function queryAttribute($expression, $attribute) {
+    $node = $this->querySafe($expression)->item(0);
+    if (!$node->hasAttribute($attribute)) {
+        throw new ESqissor($this, "Not found attibyte '$attribute' in '$expression'.");
+    }
+    return $node->getAttribute($attribute);
+  }
+  
+  function queryValue($expression) {
+    $nodes = $this->querySafe($expression);
+    return $nodes->item(0)->nodeValue;
+  }
+}  
