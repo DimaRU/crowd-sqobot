@@ -1,6 +1,6 @@
 <?php namespace Sqobot;
 
-class KickstarterPageRow extends Row {
+class ProjectPageRow extends Row {
   static $defaultTable = 'project_page';
   static $fields = array(
         'site_id',
@@ -9,6 +9,7 @@ class KickstarterPageRow extends Row {
         'name',
         'blurb',
         'goal',
+        'campaign_type',
         'country',
         'currency',
         'currency_symbol',
@@ -24,7 +25,11 @@ class KickstarterPageRow extends Row {
         'short_url',
         'full_desc',
         'project_json',
-        'ref_page'
+        'ref_page',
+        'mailformed'
         );
-    
+  function defaults() {
+    foreach (static::$fields as $field) { $this->$field = 0; }
+    return $this;
+  }
 }

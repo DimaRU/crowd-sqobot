@@ -183,6 +183,10 @@ class Download {
     return strftime( opt('dlLog', cfg('dlLog')) );
   }
 
+  function gethttpCode() {
+      curl_getinfo(Download::$curl, CURLINFO_HTTP_CODE);
+  }
+  
   // Create log record
   function summarize($url) {
     $meta = curl_getinfo(Download::$curl);

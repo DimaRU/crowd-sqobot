@@ -97,7 +97,7 @@ class TaskScan extends Task {
   }
       
   //
-  // Scan one page
+  // Scan single page
   //
   function do_url(array $args = null) {
     if ($args === null or !opt(1)) {

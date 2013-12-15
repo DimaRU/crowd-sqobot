@@ -39,6 +39,7 @@ class NewsMailer {
             // <h1>Kickstarter</h1>
             $this->addLine("<h2>".ucfirst($sitename)."</h2>");
             $this->site = $sitename;
+            $this->category = "";   // Reset category
         }
     }
 

@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Хост: localhost
--- Время создания: Дек 01 2013 г., 16:41
+-- Время создания: Дек 14 2013 г., 15:10
 -- Версия сервера: 5.1.69
 -- Версия PHP: 5.3.3
 
@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS `st_project_page` (
   `daily` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Ежедневная рассылка',
   `weekly` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Еженедельная рассылка',
   `ref_page` varchar(255) DEFAULT NULL,
+  `mailformed` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`project_id`),
   KEY `country` (`country`),
   KEY `deadline` (`deadline`),

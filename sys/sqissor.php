@@ -297,16 +297,6 @@ abstract class Sqissor {
 
   // Init DOMDocument processing
   function initDom($data) {
-    /*  
-    // Clean up html thru tydy lib
-    static $config = array('indent' => false,
-               'output-html' => true,
-               'wrap'        => 0);
-    $tidy = new \tidy;
-    $data = $tidy->repairString($data, $config, 'utf8');
-    unset($tidy);
-     */
-
     $this->htmldom = new \DOMDocument();
     //$this->htmldom->validateOnParse = true;
     $this->htmldom->recover = true;
