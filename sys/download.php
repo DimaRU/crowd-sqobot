@@ -66,7 +66,7 @@ class Download {
   }
 
   function setContext($url, $headers = array()) {
-    $this->url($url);
+    $this->url(realURL($url));
     is_array($headers) or $headers = array('referer' => $headers);
     $this->headers = array_change_key_case($headers);
     curl_setopt_array(Download::$curl, $this->contextOptions);

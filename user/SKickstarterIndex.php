@@ -10,6 +10,7 @@ class SKickstarterIndex extends Sqissor {
 
     protected function doSlice($data, array $extra) {
         $row = array(
+        'site_id' => 'kickstarter',
         'load_time' => date(DATE_ATOM),
         'ref_page' => $this->url);
 
@@ -19,7 +20,7 @@ class SKickstarterIndex extends Sqissor {
 
         foreach ($projects_index as $project) {
             $row['project_id'] = $this->domain() . strstr($project->getAttribute('href'), "?", true);
-            KickstarterIndexRow::createIgnoreWith($row);
+            SiteIndexRow::createIgnoreWith($row);
         }
         $last_page = $this->queryAttribute('.//li[@class="page"]', "data-last_page");
 

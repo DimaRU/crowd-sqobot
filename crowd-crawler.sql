@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Хост: localhost
--- Время создания: Дек 14 2013 г., 15:10
+-- Время создания: Дек 18 2013 г., 00:34
 -- Версия сервера: 5.1.69
 -- Версия PHP: 5.3.3
 
@@ -17,38 +17,8 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8 */;
 
 --
--- База данных: `crowd-crawler`
+-- База данных: `crowd-sqobot`
 --
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `st_indiegogo_index`
---
-
-CREATE TABLE IF NOT EXISTS `st_indiegogo_index` (
-  `load_time` datetime NOT NULL COMMENT 'Время загрузки страницы с данными',
-  `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
-  `ref_page` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`project_id`),
-  UNIQUE KEY `project_id` (`project_id`),
-  KEY `load_time` (`load_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Project index';
-
--- --------------------------------------------------------
-
---
--- Структура таблицы `st_kickstarter_index`
---
-
-CREATE TABLE IF NOT EXISTS `st_kickstarter_index` (
-  `load_time` datetime NOT NULL COMMENT 'Время загрузки страницы с данными',
-  `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
-  `ref_page` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`project_id`),
-  UNIQUE KEY `project_id` (`project_id`),
-  KEY `load_time` (`load_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Project index';
 
 -- --------------------------------------------------------
 
@@ -95,7 +65,7 @@ CREATE TABLE IF NOT EXISTS `st_project_page` (
   `daily` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Ежедневная рассылка',
   `weekly` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Еженедельная рассылка',
   `ref_page` varchar(255) DEFAULT NULL,
-  `mailformed` tinyint(1) NOT NULL DEFAULT '0',
+  `mailformed` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Флаг недооформленного проекта',
   PRIMARY KEY (`project_id`),
   KEY `country` (`country`),
   KEY `deadline` (`deadline`),
@@ -105,8 +75,25 @@ CREATE TABLE IF NOT EXISTS `st_project_page` (
   KEY `site_id` (`site_id`),
   KEY `hourly` (`hourly`),
   KEY `daily` (`daily`),
-  KEY `weekly` (`weekly`)
+  KEY `weekly` (`weekly`),
+  KEY `malformed` (`mailformed`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `st_site_index`
+--
+
+CREATE TABLE IF NOT EXISTS `st_site_index` (
+  `load_time` datetime NOT NULL COMMENT 'Время загрузки страницы с данными',
+  `site_id` varchar(20) NOT NULL,
+  `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
+  `ref_page` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`project_id`),
+  UNIQUE KEY `project_id` (`project_id`),
+  KEY `load_time` (`load_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Project index';
 
 -- --------------------------------------------------------
 
