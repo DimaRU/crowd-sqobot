@@ -7,7 +7,8 @@
  */
 class SIndiegogoPage extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
-
+    static $accept = "text/html";
+    
     protected function doSlice($data, array $extra) {
         $row = array( 'site_id' => 'indiegogo',
                       'load_time' => date(DATE_ATOM),
@@ -45,6 +46,7 @@ class SIndiegogoPage extends Sqissor {
         }
 
         $row['blurb'] = $this->queryAttribute('.//meta[@property="og:description"]', "content");
+        $row['avatar'] = strstr($this->queryAttribute('.//img[@class="fl avatar"]', "src"), "?", true);
         $row['short_url'] = $this->queryAttribute('.//input[@name="sharing_url"]', "value");
 
         // <span class="category"><a href="/projects?filter_category=Community">Community</a>

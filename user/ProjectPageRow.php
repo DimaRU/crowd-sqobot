@@ -8,6 +8,7 @@ class ProjectPageRow extends Row {
         'project_id',
         'name',
         'blurb',
+        'avatar',
         'goal',
         'campaign_type',
         'country',

@@ -80,7 +80,7 @@ class Download {
     $this->reply = curl_exec(Download::$curl);
     $this->write_log();
     if ($this->reply === false) {
-      throw new RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
+      throw new \RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
     }
     return $this;
   }
@@ -212,6 +212,7 @@ class Download {
         $meta, 
         array_flip(array(
             'http_code',
+            'size_download',
             'total_time', 
             'namelookup_time', 
             'connect_time',

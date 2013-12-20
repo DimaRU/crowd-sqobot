@@ -7,6 +7,7 @@
  */
 class SKickstarterPage extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
+    static $accept = "text/html";
     
     protected function doSlice($data, array $extra) {
         $row = array('site_id' => 'kickstarter', 
@@ -53,6 +54,7 @@ class SKickstarterPage extends Sqissor {
         $row['project_id'] = strstr($pdata['urls']['web']['project'], $this->domain());
         $row['name'] = $pdata['name'];
         $row['blurb'] = $pdata['blurb'];
+        $row['avatar'] = strstr(str_replace("https://", "http://", $pdata['photo']['small']), "?", true);
         $row['goal'] = $pdata['goal'];
         $row['country'] = $pdata['country'];
         $row['currency'] = $pdata['currency'];

@@ -7,6 +7,7 @@
  */
 class SIndiegogoIndex extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
+    static $accept = "text/html";
     
     protected function doSlice($data, array $extra) {
         $row = array(

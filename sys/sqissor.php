@@ -6,6 +6,7 @@ abstract class Sqissor {
   public $url;
   public $options;
   static $domain_name;
+  static $accept = null;       // Accept: header
   
   // DOMDocument processing
   public $finder;
@@ -14,12 +15,12 @@ abstract class Sqissor {
   // Process URL, return next URL, if any
   // Occurred exceptions are logged and re-thrown.
   // return mixed $callback's result
-  static function process($url, array $options = array()) {
+  static function process($url, $site, array $options = array()) {
     $self = get_called_class();
     return rescue(
       // Main function
-      function () use ($url, $options, $self) {
-        $result = $self::factory($options['site'], $options)->sliceURL($url);
+      function () use ($url, $site, $options, $self) {
+        $result = $self::factory($site, $options)->sliceURL($url);
         return $result;
       },
       // Executed hen some error thrown
@@ -67,9 +68,9 @@ abstract class Sqissor {
   function sliceURL($url) {
     $this->url = $url;
     log("Process $url");
-    $referrer = dirname($url);
-    strrchr($referrer, '/') === false and $referrer = null;
-    return $this->slice(download($url, $referrer));
+    $referer = dirname($url);
+    strrchr($referer, '/') === false and $referer = null;
+    return $this->slice(download($url, array('referer'  => $referer, 'accept' => static::$accept)));
   }
 
   //
@@ -109,7 +110,7 @@ abstract class Sqissor {
   }
   
   //
-  // Returns extra data associated with this queue item. See ->enqueue().
+  // Returns extra data associated with this item.
   // Empty array is returned if no extra was assigned.
   //
   //= array
@@ -326,5 +327,20 @@ abstract class Sqissor {
   function queryValue($expression) {
     $nodes = $this->querySafe($expression);
     return $nodes->item(0)->nodeValue;
+  }
+  
+  function incrementPageNum($url, $pagesym) {
+    $parts1 = explode("?", $url);
+    $parts2 = explode("&", $parts1[1]);
+    //var_dump($parts2);
+    foreach($parts2 as &$key) {
+       $parts3 = explode("=", $key);
+       if ($parts3[0] == $pagesym) {
+            $parts3[1] += 1;
+            $key = implode("=", $parts3);
+       }
+    }
+    $parts1[1] = implode("&", $parts2);
+    return implode("?", $parts1);
   }
 }  
