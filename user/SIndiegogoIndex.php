@@ -7,9 +7,11 @@
  */
 class SIndiegogoIndex extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
+    static $accept = "text/html";
     
     protected function doSlice($data, array $extra) {
         $row = array(
+        'site_id' => 'indiegogo',
         'load_time' => date(DATE_ATOM),
         'ref_page' => $this->url);
 
@@ -21,7 +23,7 @@ class SIndiegogoIndex extends Sqissor {
         foreach ($projects_index as $project) {
             $s = $project->getAttribute('href');
             $row['project_id'] = $this->domain() . substr($s, 0, strrpos($s,"/"));
-            IndiegogoIndexRow::createOrReplaceWith($row);
+            SiteIndexRow::createOrReplaceWith($row);
         }
         // <div class="browse_pagination" locale="en">
         // <a href="/projects?filter_country=CTRY_RU&amp;filter_quick=new&amp;pg_num=183" rel="next" class="next_page">Next</a>

@@ -1,7 +1,7 @@
-0  *  *  *  *	root	/var/www/crowd-sqobot/cli mail new hourly
-30 *  *  *  *	root	/var/www/crowd-sqobot/cli scan new kickstarter
-45 *  *  *  *	root	/var/www/crowd-sqobot/cli scan new indiegogo
-56 18 *  *  *	root	/var/www/crowd-sqobot/cli mail stat daily dmitry@borovikov.name
-0  19 *  *  *	root	/var/www/crowd-sqobot/cli mail new daily
-57 18 *  *  thu	root	/var/www/crowd-sqobot/cli mail stat weekly dmitry@borovikov.name
-0  19 *  *  thu	root	/var/www/crowd-sqobot/cli mail new weekly
+0  *  *  *  *	root	/var/www/crowd-crawler/cli mail new hourly
+30 *  *  *  *	root	/var/www/crowd-crawler/cli scan new kickstarter --maxpage=10
+45 *  *  *  *	root	/var/www/crowd-crawler/cli scan new indiegogo
+56 18 *  *  *	root	/var/www/crowd-crawler/cli mail stat daily dmitry@borovikov.name
+0  19 *  *  *	root	/var/www/crowd-crawler/cli mail new daily
+57 18 *  *  thu	root	/var/www/crowd-crawler/cli mail stat weekly dmitry@borovikov.name
+0  19 *  *  thu	root	/var/www/crowd-crawler/cli mail new weekly

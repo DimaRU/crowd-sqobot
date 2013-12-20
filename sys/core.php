@@ -229,7 +229,7 @@ function fire($event, $args = array()) {
 function log($msg, $level = 'info') {
   if (strpos(cfg('log', ' $ '), " $level ") !== false and $log = logFile()) {
     $client = Core::$cl ? 'cli' : S::pickFlat($_SERVER, 'REMOTE_ADDR');
-    $user = Web::user() and $client .= " $user";
+    //$user = Web::user() and $client .= " $user";
 
     $msg = sprintf('$ %s [%s] [%s] %s', strtoupper($level), date('H:i:s d-m-Y'),
                    $client, $msg);

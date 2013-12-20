@@ -7,17 +7,30 @@
  */
 class SKickstarterPage extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
+    static $accept = "text/html";
     
     protected function doSlice($data, array $extra) {
         $row = array('site_id' => 'kickstarter', 
                      'load_time' => date(DATE_ATOM),
-                     'ref_page' => isset($extra['ref_page']) ? $extra['ref_page'] : null
+                     'ref_page' => isset($extra['ref_page']) ? $extra['ref_page'] : null,
+                     'mailformed' => 0
             );
-
         $this->initDom($data);
-
+        try {
+            $this->parsePage($data, $row);
+        } catch (ESqissor $e) {
+            $row['mailformed'] = 1;
+            ProjectPageRow::createOrReplaceWith($row);
+            throw $e;
+        }
+        ProjectPageRow::createOrReplaceWith($row);
+    }
+    
+    private function parsePage(&$data, &$row) {
         //$htmlstr = 'window.current_project = "{ .... }";1234';
-        $pos1 = strpos($data, 'window.current_project');
+        if (($pos1 = strpos($data, 'window.current_project')) === false) {
+            throw new ESqissor($this, "json data not found");
+        }
         $pos1 = strpos($data,'"{', $pos1);
         $pos2 = strpos($data,'}"', $pos1);
         $json = substr($data, $pos1+1, $pos2-$pos1);
@@ -41,6 +54,7 @@ class SKickstarterPage extends Sqissor {
         $row['project_id'] = strstr($pdata['urls']['web']['project'], $this->domain());
         $row['name'] = $pdata['name'];
         $row['blurb'] = $pdata['blurb'];
+        $row['avatar'] = strstr(str_replace("https://", "http://", $pdata['photo']['small']), "?", true);
         $row['goal'] = $pdata['goal'];
         $row['country'] = $pdata['country'];
         $row['currency'] = $pdata['currency'];
@@ -58,7 +72,5 @@ class SKickstarterPage extends Sqissor {
         $row['location_url'] = $pdata['location']['urls']['web']['discover'];
         $row['category'] = $pdata['category']['name'];
         $row['short_url'] = $pdata['urls']['web']['project_short'];
-        
-        KickstarterPageRow::createWith($row);
     }
 }

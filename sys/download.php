@@ -66,7 +66,7 @@ class Download {
   }
 
   function setContext($url, $headers = array()) {
-    $this->url($url);
+    $this->url(realURL($url));
     is_array($headers) or $headers = array('referer' => $headers);
     $this->headers = array_change_key_case($headers);
     curl_setopt_array(Download::$curl, $this->contextOptions);
@@ -80,7 +80,7 @@ class Download {
     $this->reply = curl_exec(Download::$curl);
     $this->write_log();
     if ($this->reply === false) {
-      throw new RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
+      throw new \RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
     }
     return $this;
   }
@@ -183,6 +183,10 @@ class Download {
     return strftime( opt('dlLog', cfg('dlLog')) );
   }
 
+  function gethttpCode() {
+      curl_getinfo(Download::$curl, CURLINFO_HTTP_CODE);
+  }
+  
   // Create log record
   function summarize($url) {
     $meta = curl_getinfo(Download::$curl);
@@ -208,6 +212,7 @@ class Download {
         $meta, 
         array_flip(array(
             'http_code',
+            'size_download',
             'total_time', 
             'namelookup_time', 
             'connect_time',
