@@ -100,10 +100,10 @@ abstract class Sqissor {
   //
   //? doSlice('<!DOCTYPE html><html>...</html>', array('a' => 'b'))
   //
-  protected abstract function doSlice($data, array $extra);
+  protected abstract function doSlice($data, array $options);
 
   //
-  // Return associaed domain name;
+  // Return associated domain name;
   //
   function domain() {
       return static::$domain_name;

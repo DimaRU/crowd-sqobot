@@ -9,11 +9,12 @@ class SKickstarterIndex extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
     static $accept = "application/json";
     
-    protected function doSlice($data, array $extra) {
+    protected function doSlice($data, array $options) {
         $row = array(
         'site_id' => 'kickstarter',
         'load_time' => date(DATE_ATOM),
         'ref_page' => str_replace("http://", "", $this->url));
+        SiteIndexRow::setTableName($options['table']);
         
         $index = json_decode($data, true);
 

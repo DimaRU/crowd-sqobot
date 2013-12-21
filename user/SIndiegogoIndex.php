@@ -9,12 +9,13 @@ class SIndiegogoIndex extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
     static $accept = "text/html";
     
-    protected function doSlice($data, array $extra) {
+    protected function doSlice($data, array $options) {
         $row = array(
         'site_id' => 'indiegogo',
         'load_time' => date(DATE_ATOM),
         'ref_page' => $this->url);
-
+        SiteIndexRow::setTableName($options['table']);
+        
         $this->initDom($data);
         
         // <div class="project-details"> <a href="/projects/start-anew-world/pinw" class="name bold">Start Anew World</a>

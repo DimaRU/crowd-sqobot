@@ -97,14 +97,16 @@ class TaskScan extends Task {
   // Scan single page
   //
   function do_url(array $args = null) {
-    if ($args === null or !opt(1)) {
-      return print 'scan url SITE URL';
+    if ($args === null or !opt(2)) {
+      return print 'scan url SITE URL TABLE';
     }
     
     $site = opt(0);
     $url = opt(1);
+    $table = opt(2);
     echo "Process url $url", PHP_EOL;
-    $url = Sqissor::process($url, $site);
+    $options = array('table' => $table);
+    $url = Sqissor::process($url, $site, $options);
     if ($url) {
         echo "Returned $url", PHP_EOL;
     }
@@ -113,7 +115,7 @@ class TaskScan extends Task {
   // Scan index
   function do_index(array $args = null) {
     if ($args === null or !opt(2)) {
-      return print 'scan index SITE URL PAGE-TABLE --maxpage=num';
+      return print 'scan index SITENAME URL PAGE-TABLE --maxpage=num';
     }
 
     $site_id = opt(0);
@@ -127,7 +129,7 @@ class TaskScan extends Task {
   // Scan missing pages from index
   function do_pages(array $args = null) {
     if ($args === null or !opt(2)) {
-      return print 'scan pages SITE_ID INDEX-TABLE PAGE-TABLE';
+      return print 'scan pages SITENAME INDEX-TABLE PAGE-TABLE';
     }
 
     $site_id = opt(0);

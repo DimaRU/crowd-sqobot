@@ -1,7 +1,7 @@
 <?php namespace Sqobot;
 
 class ProjectPageRow extends Row {
-  static $defaultTable = 'project_page';
+  static $table;
   static $fields = array(
         'site_id',
         'load_time',

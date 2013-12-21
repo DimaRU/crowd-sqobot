@@ -2,33 +2,35 @@
 
 class Row {
   static $defaultTable;
+  static $table;
   static $fields = array('id');
 
-  public $table;
   public $id;
 
-  static function tableName($table = null) {
+  static function setTableName($table = null) {
     if (!$table) {
       if ($table = static::$defaultTable) {
-        $table = cfg('dbPrefix').$table;
+        static::$table = cfg('dbPrefix').static::$defaultTable;
+      } else {
+        $class = get_called_class();
+        throw new Error("No default table specified for Row class $class.");
+      }
+    } else {
+        static::$table = $table;
+    }
+    return static::$table;
+  }
+    
+  function getTableName() {
+    if (!static::$table) {
+      if (static::$defaultTable) {
+        static::$table = cfg('dbPrefix').static::$defaultTable;
       } else {
         $class = get_called_class();
         throw new Error("No default table specified for Row class $class.");
       }
     }
-
-    return $table;
-  }
-
-  static function count(array $fields = null) {
-    $sql = 'SELECT COUNT(1) AS count FROM `'.static::tableName().'`';
-    $fields and $sql .= ' WHERE '.join(' AND ', S($fields, '#"`?` = ??"'));
-
-    $stmt = exec($sql, array_values((array) $fields));
-    $count = $stmt->fetch()->count;
-    $stmt->closeCursor();
-
-    return $count;
+    return static::$table;
   }
 
   static function make($fields = array()) {
@@ -56,6 +58,17 @@ class Row {
     return $this;
   }
 
+  static function count(array $fields = null) {
+    $sql = 'SELECT COUNT(1) AS count FROM `'.static::$table.'`';
+    $fields and $sql .= ' WHERE '.join(' AND ', S($fields, '#"`?` = ??"'));
+
+    $stmt = exec($sql, array_values((array) $fields));
+    $count = $stmt->fetch()->count;
+    $stmt->closeCursor();
+
+    return $count;
+  }
+
   // See create(), createWith(), createIgnore() and others.
   protected function doCreate($method, $sqlVerb) {
     $bind = $this->sqlFields();
@@ -63,13 +76,12 @@ class Row {
 
     list($fields, $bind) = S::divide($bind);
 
-    $sql = "$sqlVerb INTO `".$this->table().'`'.
+    $sql = "$sqlVerb INTO `".$this->getTableName().'`'.
            ' (`'.join('`, `', $fields).'`) VALUES'.
            ' ('.join(', ', S($bind, '"??"')).')';
 
     $id = exec($sql, $bind);
     
-
     in_array('id', static::$fields) and $this->id = $id;
     return $this;
   }
@@ -79,19 +91,10 @@ class Row {
     $fields = S(static::$fields, '"`?` = ?"');
     $bind = array_values($this->sqlFields());
 
-    $sql = "$sqlVerb `".$this->table().'` SET `'.join(', ', $fields).
+    $sql = "$sqlVerb `".$this->getTableName().'` SET `'.join(', ', $fields).
            ' WHERE site = :site AND site_id = :site_id';
     exec($sql, $bind);
     return $this;
-  }
-
-  function table($new = null) {
-    if (func_num_args()) {
-      $this->table = $new;
-      return $this;
-    } else {
-      return static::tableName($this->table);
-    }
   }
 
   function sqlFields() {
