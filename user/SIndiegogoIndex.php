@@ -10,6 +10,9 @@ class SIndiegogoIndex extends Sqissor {
     static $accept = "text/html";
     
     protected function doSlice($data, array $options) {
+        if (Download::httpReturnCode() == 404)
+            return;
+        
         $row = array(
         'site_id' => 'indiegogo',
         'load_time' => date(DATE_ATOM),

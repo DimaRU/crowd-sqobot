@@ -17,6 +17,10 @@ class SIndiegogoPage extends Sqissor {
                       'mailformed' => 0
         );
         Row::setTableName($options['table']);
+        if (Download::httpReturnCode() == 404) {
+            $row['mailformed'] = 1;
+            Row::createOrReplaceWith($row);
+        }
 
         $this->initDom($data);
         try {

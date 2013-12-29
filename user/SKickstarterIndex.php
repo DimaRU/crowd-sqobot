@@ -10,6 +10,9 @@ class SKickstarterIndex extends Sqissor {
     static $accept = "application/json";
     
     protected function doSlice($data, array $options) {
+        if (Download::httpReturnCode() == 404)
+            return;
+        
         $row = array(
         'site_id' => 'kickstarter',
         'load_time' => date(DATE_ATOM),

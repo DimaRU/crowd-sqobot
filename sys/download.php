@@ -31,7 +31,7 @@ class Download {
         CURLOPT_HEADER         => false,                            // don't return headers
         CURLOPT_FOLLOWLOCATION => cfg('dlRedirects') > 0,           // follow redirects
         CURLOPT_MAXREDIRS      => max(0, (int) cfg('dlRedirects')), // stop after 10 redirects
-        CURLOPT_FAILONERROR    => !!cfg('dlFetchOnError'),
+        CURLOPT_FAILONERROR    => !cfg('dlFetchOnError'),
         CURLOPT_AUTOREFERER    => true,                             // set referer on redirect
         CURLOPT_CONNECTTIMEOUT => 120,                              // timeout on connect
         CURLOPT_TIMEOUT        => (float) cfg('dlTimeout'),         // timeout on response
@@ -77,15 +77,22 @@ class Download {
 
   function read() {
     //$limit = min(static::$maxFetchSize, PHP_INT_MAX);
-    $this->reply = curl_exec(Download::$curl);
+    $this->reply = curl_exec(static::$curl);
     $this->write_log();
-    if ($this->reply === false) {
-      throw new \RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
-    }
-    if (in_array(Download::httpReturnCode(), array(0,200,404))) {
-        return $this;
-    } else {
-        throw new \RuntimeException("Error - http code ".Download::httpReturnCode()." loading [{$this->url}].");
+    $errno = curl_errno(static::$curl);
+    
+    switch($errno) {
+      case CURLE_OK:
+          if (in_array(static::httpReturnCode(), array(0,200))) {
+            return $this;
+          }
+      case CURLE_HTTP_NOT_FOUND:
+        log("Return http code:".static::httpReturnCode()." ".$this->url);
+        if (static::httpReturnCode() == 404) {
+             return $this;
+        }
+      default :
+        throw new \RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
     }
   }
 
@@ -188,7 +195,7 @@ class Download {
   }
 
   static function httpReturnCode() {
-      curl_getinfo(Download::$curl, CURLINFO_HTTP_CODE);
+    return curl_getinfo(Download::$curl, CURLINFO_HTTP_CODE);
   }
   
   // Create log record
