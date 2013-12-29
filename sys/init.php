@@ -3,8 +3,7 @@
 define(__NAMESPACE__.'\\NS', __NAMESPACE__.'\\');
 defined(NS.'ROOT') or define(NS.'ROOT', dirname(__DIR__).'/');
 defined(NS.'USER') or define(NS.'USER', ROOT);
-define(NS.'VERSION', '0.1');
-define(NS.'HOMEPAGE', 'http://crowd-sqobot.bdm.org.ru');
+define(NS.'VERSION', '0.3');
 
 error_reporting(-1);
 ini_set('display_errors', true);

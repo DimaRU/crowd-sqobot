@@ -3,8 +3,8 @@
 class Row {
   static $defaultTable;
   static $table;
-  static $fields = array('id');
-
+  
+  private $row;
   public $id;
 
   static function setTableName($table = null) {
@@ -39,18 +39,8 @@ class Row {
 
   //* $fields stdClass, hash
   function __construct($fields = array()) {
-    $this->defaults()->fill($fields);
-  }
-
-  //* $fields stdClass, hash
-  function fill($fields) {
-    is_object($fields) and $fields = get_object_vars($fields);
-
-    foreach (static::$fields as $field) {
-      isset($fields[$field]) and $this->$field = $fields[$field];
-    }
-
-    return $this;
+    $this->defaults();//->fill($fields);
+    $this->row = $fields;
   }
 
   // Must return $this.
@@ -71,45 +61,28 @@ class Row {
 
   // See create(), createWith(), createIgnore() and others.
   protected function doCreate($method, $sqlVerb) {
-    $bind = $this->sqlFields();
-    unset($bind['id']);
-
-    list($fields, $bind) = S::divide($bind);
+    list($fields, $bind) = S::divide($this->row);
 
     $sql = "$sqlVerb INTO `".$this->getTableName().'`'.
            ' (`'.join('`, `', $fields).'`) VALUES'.
            ' ('.join(', ', S($bind, '"??"')).')';
-
-    $id = exec($sql, $bind);
+    $this->id = exec($sql, $bind);
     
-    in_array('id', static::$fields) and $this->id = $id;
     return $this;
   }
 
   // See update(), updateWith(), updateIgnore() and others.
   protected function doUpdate($method, $sqlVerb) {
-    $fields = S(static::$fields, '"`?` = ?"');
-    $bind = array_values($this->sqlFields());
+    $bind['site_id'] = $this->row['site_id'];
+    $bind['project_id'] = $this->row['project_id'];
+    $fields = array_diff_key($this->row, $bind);
 
-    $sql = "$sqlVerb `".$this->getTableName().'` SET `'.join(', ', $fields).
-           ' WHERE site = :site AND site_id = :site_id';
+    $sql = "$sqlVerb `".$this->getTableName().'` SET '.join(', ', S($fields, '#"`?` = `?`"')).
+           ' WHERE `site_id` = :site_id AND `project_id` = :project_id';
     exec($sql, $bind);
     return $this;
   }
 
-  function sqlFields() {
-    $result = array();
-
-    foreach (static::$fields as $field) {
-      if ($this->$field instanceof \DateTime) {
-        $result[$field] = S::sqlDateTime($this->$field->getTimestamp());
-      } else {
-        $result[$field] = $this->$field;
-      }
-    }
-
-    return $result;
-  }
 
   /*---------------------------------------------------------------------
   | RECORD MANIPULATION VERBS

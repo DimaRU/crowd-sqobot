@@ -16,17 +16,17 @@ class SIndiegogoPage extends Sqissor {
                       'ref_page' => isset($options['ref_page']) ? $options['ref_page'] : null,
                       'mailformed' => 0
         );
-        ProjectPageRow::setTableName($options['table']);
+        Row::setTableName($options['table']);
 
         $this->initDom($data);
         try {
             $this->parsePage($row);
         } catch (ESqissor $e) {
             $row['mailformed'] = 1;
-            ProjectPageRow::createOrReplaceWith($row);
+            Row::createOrReplaceWith($row);
             throw $e;
         }
-        ProjectPageRow::createOrReplaceWith($row);
+        Row::createOrReplaceWith($row);
     }
 
     private function parsePage(&$row) {

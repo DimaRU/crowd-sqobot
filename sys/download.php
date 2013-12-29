@@ -45,7 +45,7 @@ class Download {
   }
 
   function __destruct() {
-    $this->close();
+    //$this->close();
   }
 
   function url($new = null) {
@@ -82,7 +82,11 @@ class Download {
     if ($this->reply === false) {
       throw new \RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
     }
-    return $this;
+    if (in_array(Download::httpReturnCode(), array(0,200,404))) {
+        return $this;
+    } else {
+        throw new \RuntimeException("Error - http code ".Download::httpReturnCode()." loading [{$this->url}].");
+    }
   }
 
   function close() {
@@ -183,7 +187,7 @@ class Download {
     return strftime( opt('dlLog', cfg('dlLog')) );
   }
 
-  function gethttpCode() {
+  static function httpReturnCode() {
       curl_getinfo(Download::$curl, CURLINFO_HTTP_CODE);
   }
   
