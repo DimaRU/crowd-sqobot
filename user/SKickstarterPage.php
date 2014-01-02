@@ -15,7 +15,7 @@ class SKickstarterPage extends Sqissor {
                      'ref_page' => isset($options['ref_page']) ? $options['ref_page'] : null,
                      'mailformed' => 0
             );
-        Row::setTableName($options['table']);
+        Row::setTableName($options['page_table']);
 
         if (Download::httpReturnCode() == 404) {
             $row['mailformed'] = 1;
@@ -79,5 +79,6 @@ class SKickstarterPage extends Sqissor {
         $row['location_url'] = $pdata['location']['urls']['web']['discover'];
         $row['category'] = $pdata['category']['name'];
         $row['short_url'] = $pdata['urls']['web']['project_short'];
+        $row['json_url'] = $pdata['urls']['api']['project'];
     }
 }

@@ -11,7 +11,7 @@ class TaskScan extends Task {
 
     $started = microtime(true);
 
-    $options = array('table' => $index_table);
+    $options = array('index_table' => $index_table);
     $pages = 0;
     do {
         $pages++;
@@ -45,7 +45,7 @@ class TaskScan extends Task {
     echo "Scanning $pages new project pages.", PHP_EOL;
     $started = microtime(true);
 
-    $options = array('table' => $page_table);
+    $options = array('page_table' => $page_table);
     foreach($projects as $project) {
         $options['ref_page'] = $project->ref_page;
         try {
@@ -68,19 +68,23 @@ class TaskScan extends Task {
     log("$count pages deleted from index.");
   }
   
+  private function scan_stats($site_id, $index_table, $stats_table) {
+      
+  }
   //
   // Scan news from site
   //
   function do_new(array $args = null) {
     if ($args === null or !opt(0)) {
-      return print 'scan SITENAME --maxpage=num';
+      return print 'scan new SITENAME --maxpage=num';
     }
     $site_id = opt(0);
 
     if (!$scancfg = cfg("scan $site_id")) return print "No scan $site_id configuration string".PHP_EOL;
-    list($index_table, $page_table, $start_page) = explode(' ', trim($scancfg));
+    list($index_table, $page_table, $stats_table, $start_page) = explode(' ', trim($scancfg));
     $index_table = static::table($index_table);
     $page_table = static::table($page_table);
+    $stats_table = static::table($stats_table);
     $maxpage = isset($args['maxpage']) ? $args['maxpage'] : null ;
 
     try {
@@ -97,15 +101,25 @@ class TaskScan extends Task {
   // Scan single page
   //
   function do_url(array $args = null) {
-    if ($args === null or !opt(2)) {
-      return print 'scan url SITE URL TABLE';
+    if ($args === null or !opt(1)) {
+      return print 'scan url SITE URL [OPTION=[VALUE] [...]]';
+    }
+
+    $all = opt();
+    $site = array_shift($all);
+    $url = array_shift($all);
+
+    $options = array();
+
+    foreach ($all as $str) {
+      if (strrchr($str, '=') === false) {
+        $options[$str][] = 1;
+      } else {
+        $options[strtok($str, '=')] = strtok(null);
+      }
     }
     
-    $site = opt(0);
-    $url = opt(1);
-    $table = opt(2);
     echo "Process url $url", PHP_EOL;
-    $options = array('table' => $table);
     $url = Sqissor::process($url, $site, $options);
     if ($url) {
         echo "Returned $url", PHP_EOL;
@@ -138,4 +152,21 @@ class TaskScan extends Task {
     $this->scan_pages($site_id, $index_table, $page_table);
   }
 
+  // Scan updates for stats
+  function do_stats(array $args = null) {
+    if ($args === null or !opt(0)) {
+      return print 'scan stats SITENAME';
+    }
+    $site_id = opt(0);
+
+    if (!$scancfg = cfg("scan $site_id")) return print "No scan $site_id configuration string".PHP_EOL;
+    list($index_table, $page_table, $stats_table, $start_page) = explode(' ', trim($scancfg));
+    $index_table = static::table($index_table);
+    $page_table = static::table($page_table);
+    $stats_table = static::table($stats_table);
+    $maxpage = isset($args['maxpage']) ? $args['maxpage'] : null ;
+
+    $this->scan_stats($site_id, $index_table, $stats_table);
+  }
+  
 }

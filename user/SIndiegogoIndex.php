@@ -17,7 +17,7 @@ class SIndiegogoIndex extends Sqissor {
         'site_id' => 'indiegogo',
         'load_time' => date(DATE_ATOM),
         'ref_page' => $this->url);
-        Row::setTableName($options['table']);
+        Row::setTableName($options['index_table']);
         
         $this->initDom($data);
         
