@@ -18,10 +18,10 @@ class SKickstarterPage extends Sqissor {
         Row::setTableName($options['page_table']);
 
         if (Download::httpReturnCode() == 404) {
-            $row['mailformed'] = 1;
+            $upd['state'] = "404";
             Row::createOrReplaceWith($row);
         }
-        
+
         $this->initDom($data);
         try {
             $this->parsePage($data, $row);
@@ -32,7 +32,7 @@ class SKickstarterPage extends Sqissor {
         }
         Row::createOrReplaceWith($row);
     }
-    
+
     private function parsePage(&$data, &$row) {
         //$htmlstr = 'window.current_project = "{ .... }";1234';
         if (($pos1 = strpos($data, 'window.current_project')) === false) {
@@ -79,6 +79,6 @@ class SKickstarterPage extends Sqissor {
         $row['location_url'] = $pdata['location']['urls']['web']['discover'];
         $row['category'] = $pdata['category']['name'];
         $row['short_url'] = $pdata['urls']['web']['project_short'];
-        $row['json_url'] = $pdata['urls']['api']['project'];
+        $row['state'] = $pdata['state'];
     }
 }

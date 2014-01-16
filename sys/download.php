@@ -8,7 +8,7 @@ class Download {
   public $url;
   public $headers;
 
-  public $responseHeaders = array();
+  static $responseHeaders;
   public $reply;
 
   static function it($url, $headers = array()) {
@@ -20,6 +20,7 @@ class Download {
   }
 
   function __construct() {
+    static::$responseHeaders = array();
     if (!Download::$curl) {
         Download::$curl = curl_init();
     }
@@ -77,9 +78,13 @@ class Download {
 
   function read() {
     //$limit = min(static::$maxFetchSize, PHP_INT_MAX);
-    $this->reply = curl_exec(static::$curl);
-    $this->write_log();
-    $errno = curl_errno(static::$curl);
+     for($retry = 0; $retry < cfg('dlRetry'); $retry++) {
+        $this->reply = curl_exec(static::$curl);
+        $this->write_log();
+        if (($errno = curl_errno(static::$curl)) != CURLE_OPERATION_TIMEOUTED) {
+            break;
+        }
+     } 
     
     switch($errno) {
       case CURLE_OK:
@@ -87,7 +92,7 @@ class Download {
             return $this;
           }
       case CURLE_HTTP_NOT_FOUND:
-        log("Return http code:".static::httpReturnCode()." ".$this->url);
+          warn("Return http code:".static::httpReturnCode()." ".$this->url);
         if (static::httpReturnCode() == 404) {
              return $this;
         }
@@ -103,7 +108,7 @@ class Download {
   }
   
   private function _set_header_callback($ch, $header) {
-        $this->responseHeaders[] = $header;
+        static::$responseHeaders[] = $header;
         return strlen($header);
   } 
 
@@ -122,7 +127,7 @@ class Download {
     }
   }
 
-  
+
   //= array of scalar like 'Accept: text/html'
   function normalizeHeaders() {
     foreach (get_class_methods($this) as $func) {
@@ -197,6 +202,16 @@ class Download {
   static function httpReturnCode() {
     return curl_getinfo(Download::$curl, CURLINFO_HTTP_CODE);
   }
+  static function httpMovedURL() {
+      if (array_search("Status: 301 Moved Permanently", static::$responseHeaders) !== NULL) {
+          foreach (static::$responseHeaders as $hdr) {
+              if (strpos($hdr, "Location:") !== false) {
+                  return trim(str_replace("Location:", "", $hdr));
+              }
+          }
+      }
+      return false;
+  }
   
   // Create log record
   function summarize($url) {
@@ -233,7 +248,7 @@ class Download {
     $result .= "Stats:\n\n".static::joinIndent($stats)."\n\n";
 
     // Response
-    $this->responseHeaders and $result .= "Response:\n\n".static::joinHeaders($this->responseHeaders)."\n";
+    static::$responseHeaders and $result .= "Response:\n\n".static::joinHeaders(static::$responseHeaders)."\n";
 
     return $result;
   }

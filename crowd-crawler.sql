@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Хост: localhost
--- Время создания: Дек 30 2013 г., 17:41
+-- Время создания: Янв 11 2014 г., 13:58
 -- Версия сервера: 5.1.71
 -- Версия PHP: 5.3.3
 
@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS `st_project_page` (
   `site_id` varchar(20) NOT NULL,
   `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
   `name` varchar(100) NOT NULL,
+  `state` varchar(10) DEFAULT NULL COMMENT 'Состояние проекта',
   `blurb` varchar(255) NOT NULL,
   `avatar` varchar(200) DEFAULT NULL COMMENT 'Avatar image ref',
   `goal` int(11) NOT NULL,
@@ -93,6 +94,7 @@ CREATE TABLE IF NOT EXISTS `st_project_stats` (
   `pledged` bigint(20) NOT NULL,
   `backers_count` int(11) NOT NULL,
   `comments_count` int(11) NOT NULL,
+  `updates_count` int(11) NOT NULL,
   `project_json` text,
   PRIMARY KEY (`load_time`,`project_id`),
   KEY `site_id` (`site_id`)

@@ -18,7 +18,7 @@ class SIndiegogoPage extends Sqissor {
         );
         Row::setTableName($options['page_table']);
         if (Download::httpReturnCode() == 404) {
-            $row['mailformed'] = 1;
+            $upd['state'] = "404";
             Row::createOrReplaceWith($row);
         }
 
@@ -54,7 +54,6 @@ class SIndiegogoPage extends Sqissor {
         $row['launched_at'] = date(DATE_ATOM, strtotime($pdata['funding_started_at']));
         $row['deadline'] = date(DATE_ATOM, strtotime($pdata['funding_ends_at']));
         $row['location'] = $pdata['city'];
-        $row['json_url'] = $this->url;
 
         /*
         $row['name'] = $this->queryAttribute('.//meta[@property="og:title"]', "content");

@@ -67,7 +67,7 @@ abstract class Sqissor {
 
   function sliceURL($url) {
     $this->url = $url;
-    log("Process $url");
+    log("Process {$this->name} $url", 'debug');
     $referer = dirname($url);
     strrchr($referer, '/') === false and $referer = null;
     return $this->slice(download($url, array('referer'  => $referer, 'accept' => static::$accept)));

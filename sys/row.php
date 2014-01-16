@@ -5,6 +5,7 @@ class Row {
   static $table;
   
   private $row;
+  private $where;
   public $id;
 
   static function setTableName($table = null) {
@@ -20,7 +21,7 @@ class Row {
     }
     return static::$table;
   }
-    
+
   function getTableName() {
     if (!static::$table) {
       if (static::$defaultTable) {
@@ -33,14 +34,15 @@ class Row {
     return static::$table;
   }
 
-  static function make($fields = array()) {
-    return new static($fields);
+  static function make($fields = array(), $where = array()) {
+    return new static($fields, $where);
   }
 
   //* $fields stdClass, hash
-  function __construct($fields = array()) {
-    $this->defaults();//->fill($fields);
+  function __construct($fields = array(), $where = array()) {
+    $this->defaults();
     $this->row = $fields;
+    $this->where = $where;
   }
 
   // Must return $this.
@@ -73,16 +75,11 @@ class Row {
 
   // See update(), updateWith(), updateIgnore() and others.
   protected function doUpdate($method, $sqlVerb) {
-    $bind['site_id'] = $this->row['site_id'];
-    $bind['project_id'] = $this->row['project_id'];
-    $fields = array_diff_key($this->row, $bind);
-
-    $sql = "$sqlVerb `".$this->getTableName().'` SET '.join(', ', S($fields, '#"`?` = `?`"')).
-           ' WHERE `site_id` = :site_id AND `project_id` = :project_id';
-    exec($sql, $bind);
+    $sql = "$sqlVerb `".$this->getTableName().'` SET '.join(', ', S($this->row, '#"`?` = \"?\""')).
+           ' WHERE '.join('AND ', S($this->where, '#"`?` = \"?\""'));
+    exec($sql);
     return $this;
   }
-
 
   /*---------------------------------------------------------------------
   | RECORD MANIPULATION VERBS
@@ -104,13 +101,13 @@ class Row {
   }
 
   //= Row updated entry
-  static function updateWith($fields) {
-    return static::make($fields)->update();
+  static function updateWith($fields, $where) {
+    return static::make($fields, $where)->update();
   }
 
   //= Row updated entry
-  static function updateIgnoreWith($fields) {
-    return static::make($fields)->updateIgnore();
+  static function updateIgnoreWith($fields, $where) {
+    return static::make($fields, $where)->updateIgnore();
   }
 
   //= $this

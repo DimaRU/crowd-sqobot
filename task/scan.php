@@ -6,12 +6,28 @@ class TaskScan extends Task {
     return cfg('dbPrefix').$table;
   }
   
-  private function scan_index($site_id, $url, $index_table, $maxpage = null) {
+  public function getSiteOptions($site_id) {
+    if (!$scancfg = cfg("scan $site_id")) die("No scan $site_id configuration string");
+
+    list($index_table, $page_table, $stats_table, $start_page) = explode(' ', trim($scancfg));
+    $index_table = static::table($index_table);
+    $page_table = static::table($page_table);
+    $stats_table = static::table($stats_table);
+    $x = compact('index_table', 'page_table', 'stats_table');
+    return $x;
+  }
+  
+  public function getSiteStartURL($site_id) {
+    if (!$scancfg = cfg("scan $site_id")) die("No scan $site_id configuration string");
+    list($index_table, $page_table, $stats_table, $start_page) = explode(' ', trim($scancfg));
+    return $start_page;
+  }
+  
+  private function scan_index($site_id, $url, $options, $maxpage = null) {
     echo "Scanning index for $site_id", PHP_EOL;
-
     $started = microtime(true);
+    extract($options);
 
-    $options = array('index_table' => $index_table);
     $pages = 0;
     do {
         $pages++;
@@ -31,13 +47,14 @@ class TaskScan extends Task {
     log("Total index rows: ".$rows[0]->count);
   }
 
-  private function scan_pages($site_id, $index_table, $page_table) {
+  private function scan_pages($site_id, $options) {
+    extract($options);
     // Fetch all new projects
     $sql =  "SELECT `$index_table`.project_id, `$index_table`.ref_page ".
             "FROM `$index_table` ".
             "LEFT JOIN `$page_table` ON `$index_table`.project_id = `$page_table`.project_id ".
             "WHERE (`$page_table`.project_id IS NULL) AND (`$index_table`.site_id = \"$site_id\")";
-    
+
     $stmt = exec($sql);
     $projects = $stmt->fetchAll();
     $stmt->closeCursor();
@@ -45,7 +62,6 @@ class TaskScan extends Task {
     echo "Scanning $pages new project pages.", PHP_EOL;
     $started = microtime(true);
 
-    $options = array('page_table' => $page_table);
     foreach($projects as $project) {
         $options['ref_page'] = $project->ref_page;
         try {
@@ -59,18 +75,55 @@ class TaskScan extends Task {
          sprintf('This took %1.2f sec.', $duration));
     
     // Clean up index
-    // TODO: save bad pages for later analyses
+    // Delete only scanned
     $sql =  "DELETE `$index_table` ".
             "FROM `$index_table` ".
-            "WHERE `$index_table`.site_id = \"$site_id\"";
-
+            "LEFT JOIN `$page_table` ON `$index_table`.project_id = `$page_table`.project_id ".
+            "WHERE (`$page_table`.project_id IS NOT NULL) AND (`$index_table`.site_id = \"$site_id\")";
+    
+    // Clean up index, delete all
+    //$sql =  "DELETE `$index_table` ".
+    //        "FROM `$index_table` ".
+    //        "WHERE `$index_table`.site_id = \"$site_id\"";
+    
     $count = exec($sql);
     log("$count pages deleted from index.");
   }
   
-  private function scan_stats($site_id, $index_table, $stats_table) {
-      
+  //
+  // Scan statistic data for existing projects
+  //
+  private function scan_stats($site_id, $options) {
+    $started = microtime(true);
+    
+    extract($options);  
+    // 1. Select all records for site_id
+    // scan stats
+    // Fetch all new projects
+    $sql = "SELECT `project_id` ".
+           "FROM `$page_table` ".
+           "WHERE `mailformed` = 0 and `site_id` = \"$site_id\" and `deadline` > now() and (`state` = \"live\" OR `state` Is Null)";
+    
+    $stmt = exec($sql);
+    $projects = $stmt->fetchAll();
+    $stmt->closeCursor();
+    $pages = count($projects);
+    echo "Scanning $pages pages stats for $site_id.", PHP_EOL;
+    log("Total stats rows for $site_id: ".$pages);
+
+    foreach($projects as $project) {
+        try {
+            Sqissor::process("http://" . $project->project_id, $site_id.".Stats", $options);
+        } catch (\Exception $e) {
+            echo 'Exception: ', exLine($e), PHP_EOL;
+        }
+    }
+    $duration = microtime(true) - $started;
+    
+    log("Done stats scan $site_id, $pages pages. ".
+         sprintf('This took %1.2f sec.', $duration));
   }
+    
   //
   // Scan news from site
   //
@@ -79,24 +132,38 @@ class TaskScan extends Task {
       return print 'scan new SITENAME --maxpage=num';
     }
     $site_id = opt(0);
-
-    if (!$scancfg = cfg("scan $site_id")) return print "No scan $site_id configuration string".PHP_EOL;
-    list($index_table, $page_table, $stats_table, $start_page) = explode(' ', trim($scancfg));
-    $index_table = static::table($index_table);
-    $page_table = static::table($page_table);
-    $stats_table = static::table($stats_table);
+    $options = $this->getSiteOptions($site_id);
     $maxpage = isset($args['maxpage']) ? $args['maxpage'] : null ;
 
     try {
-      $this->scan_index($site_id, $start_page, $index_table, $maxpage);
+      $this->scan_index($site_id, $this->getSiteStartURL($site_id), $options, $maxpage);
     } catch (\Exception $e) {
       echo 'Exception: ', exLine($e), PHP_EOL;
       if (!empty($args['no-ignore'])) { return; }
     }
    
-    $this->scan_pages($site_id, $index_table, $page_table);
+    $this->scan_pages($site_id, $options);
+  }
+  
+  // Scan updates for stats
+  function do_stats(array $args = null) {
+    if ($args === null or !opt(0)) {
+      return print 'scan stats SITENAME';
+    }
+    $site_id = opt(0);
+    $options = $this->getSiteOptions($site_id);
+
+    $this->scan_stats($site_id, $options);
   }
 
+  
+  //----------------------------------------------------------------
+  //
+  // Debug tasks
+  //
+  //----------------------------------------------------------------
+  
+  
   //
   // Scan single page
   //
@@ -136,8 +203,9 @@ class TaskScan extends Task {
     $url = opt(1);
     $index_table = cfg('dbPrefix').opt(2);
     $maxpage = isset($args['maxpage']) ? $args['maxpage'] : null ;
+    $options = compact('index_table');
 
-    $this->scan_index($site_id, $url, $index_table, $maxpage);
+    $this->scan_index($site_id, $url, $options, $maxpage);
   }
   
   // Scan missing pages from index
@@ -149,24 +217,8 @@ class TaskScan extends Task {
     $site_id = opt(0);
     $index_table = cfg('dbPrefix').opt(1);
     $page_table = cfg('dbPrefix').opt(2);
-    $this->scan_pages($site_id, $index_table, $page_table);
-  }
-
-  // Scan updates for stats
-  function do_stats(array $args = null) {
-    if ($args === null or !opt(0)) {
-      return print 'scan stats SITENAME';
-    }
-    $site_id = opt(0);
-
-    if (!$scancfg = cfg("scan $site_id")) return print "No scan $site_id configuration string".PHP_EOL;
-    list($index_table, $page_table, $stats_table, $start_page) = explode(' ', trim($scancfg));
-    $index_table = static::table($index_table);
-    $page_table = static::table($page_table);
-    $stats_table = static::table($stats_table);
-    $maxpage = isset($args['maxpage']) ? $args['maxpage'] : null ;
-
-    $this->scan_stats($site_id, $index_table, $stats_table);
+    $options = compact('index_table', 'page_table');
+    $this->scan_pages($site_id, $options);
   }
   
 }
