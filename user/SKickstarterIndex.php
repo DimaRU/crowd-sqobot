@@ -9,7 +9,7 @@ class SKickstarterIndex extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
     static $accept = "application/json";
     
-    protected function doSlice($data, array $options) {
+    protected function doSlice($data) {
         if (Download::httpReturnCode() == 404)
             return;
         
@@ -17,7 +17,7 @@ class SKickstarterIndex extends Sqissor {
         'site_id' => 'kickstarter',
         'load_time' => date(DATE_ATOM),
         'ref_page' => str_replace("http://", "", $this->url));
-        Row::setTableName($options['index_table']);
+        Row::setTableName($this->getopt('index_table'));
         
         $index = json_decode($data, true);
         foreach ($index['projects'] as $project) {

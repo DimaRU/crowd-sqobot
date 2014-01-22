@@ -9,17 +9,19 @@ class SKickstarterPage extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
     static $accept = "text/html";
     
-    protected function doSlice($data, array $options) {
+    protected function doSlice($data) {
         $row = array('site_id' => 'kickstarter', 
                      'load_time' => date(DATE_ATOM),
-                     'ref_page' => isset($options['ref_page']) ? $options['ref_page'] : null,
+                     'project_id' => strstr($this->url, $this->domain()),
+                     'ref_page' => $this->getopt('ref_page'),
                      'mailformed' => 0
             );
-        Row::setTableName($options['page_table']);
+        Row::setTableName($this->getopt('page_table'));
 
         if (Download::httpReturnCode() == 404) {
-            $upd['state'] = "404";
+            $row['state'] = "404";
             Row::createOrReplaceWith($row);
+            return;
         }
 
         $this->initDom($data);

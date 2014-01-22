@@ -2,24 +2,25 @@
 
 /*
  * Parse Kickstarter project page:
- * "http://www.kickstarter.com/project/.......
+ * "http://www.indiegogo.com/project/.......
  * 
  */
 class SIndiegogoPage extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
     static $accept = "text/html";
     
-    protected function doSlice($data, array $options) {
+    protected function doSlice($data) {
         $row = array( 'site_id' => 'indiegogo',
                       'load_time' => date(DATE_ATOM),
                       'project_id' => strstr($this->url, $this->domain()),
-                      'ref_page' => isset($options['ref_page']) ? $options['ref_page'] : null,
+                      'ref_page' => $this->getopt('ref_page'),
                       'mailformed' => 0
         );
-        Row::setTableName($options['page_table']);
+        Row::setTableName($this->getopt('page_table'));
         if (Download::httpReturnCode() == 404) {
-            $upd['state'] = "404";
+            $row['state'] = "404";
             Row::createOrReplaceWith($row);
+            return;
         }
 
         $this->initDom($data);
@@ -54,6 +55,7 @@ class SIndiegogoPage extends Sqissor {
         $row['launched_at'] = date(DATE_ATOM, strtotime($pdata['funding_started_at']));
         $row['deadline'] = date(DATE_ATOM, strtotime($pdata['funding_ends_at']));
         $row['location'] = $pdata['city'];
+        $row['category'] = $pdata['category'];
 
         /*
         $row['name'] = $this->queryAttribute('.//meta[@property="og:title"]', "content");

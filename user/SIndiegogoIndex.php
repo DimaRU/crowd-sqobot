@@ -9,7 +9,7 @@ class SIndiegogoIndex extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
     static $accept = "text/html";
     
-    protected function doSlice($data, array $options) {
+    protected function doSlice($data) {
         if (Download::httpReturnCode() == 404)
             return;
         
@@ -17,7 +17,7 @@ class SIndiegogoIndex extends Sqissor {
         'site_id' => 'indiegogo',
         'load_time' => date(DATE_ATOM),
         'ref_page' => $this->url);
-        Row::setTableName($options['index_table']);
+        Row::setTableName($this->getopt('index_table'));
         
         $this->initDom($data);
         

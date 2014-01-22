@@ -100,7 +100,7 @@ abstract class Sqissor {
   //
   //? doSlice('<!DOCTYPE html><html>...</html>', array('a' => 'b'))
   //
-  protected abstract function doSlice($data, array $options);
+  protected abstract function doSlice($data);
 
   //
   // Return associated domain name;
@@ -110,15 +110,12 @@ abstract class Sqissor {
   }
   
   //
-  // Returns extra data associated with this item.
-  // Empty array is returned if no extra was assigned.
+  // Return option value
   //
-  //= array
-  //
-  function extra() {
-    return $this->options;
+  function getopt($optname) {
+      return isset($this->options[$optname]) ? $this->options[$optname] : null;
   }
-
+  
   //
   // Matches given $regexp against string $str optionally returning pocket of given
   // index $return. If $return is null all pockets are returned. If not an error

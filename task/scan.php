@@ -25,7 +25,6 @@ class TaskScan extends Task {
   
   private function scan_index($site_id, $url, $options, $maxpage = null) {
     echo "Scanning index for $site_id", PHP_EOL;
-    $started = microtime(true);
     extract($options);
 
     $pages = 0;
@@ -36,15 +35,12 @@ class TaskScan extends Task {
             break;
         }
     } while($url);
-    $duration = microtime(true) - $started;
     
-    log("Done index scan $site_id, $pages pages. ".
-         sprintf('This took %1.2f sec.', $duration));
     $sql = "SELECT COUNT(1) AS count FROM `$index_table` WHERE `site_id` = \"$site_id\"";
     $stmt = exec($sql);
     $rows = $stmt->fetchAll();
     $stmt->closeCursor();
-    log("Total index rows: ".$rows[0]->count);
+    log("Done index scan $site_id, $pages pages. Total index rows: ".$rows[0]->count);
   }
 
   private function scan_pages($site_id, $options) {
@@ -60,7 +56,6 @@ class TaskScan extends Task {
     $stmt->closeCursor();
     $pages = count($projects);
     echo "Scanning $pages new project pages.", PHP_EOL;
-    $started = microtime(true);
 
     foreach($projects as $project) {
         $options['ref_page'] = $project->ref_page;
@@ -70,9 +65,6 @@ class TaskScan extends Task {
             echo 'Exception: ', exLine($e), PHP_EOL;
         }
     }
-    $duration = microtime(true) - $started;
-    log("Done pages scan $site_id, $pages pages. ".
-         sprintf('This took %1.2f sec.', $duration));
     
     // Clean up index
     // Delete only scanned
@@ -87,15 +79,13 @@ class TaskScan extends Task {
     //        "WHERE `$index_table`.site_id = \"$site_id\"";
     
     $count = exec($sql);
-    log("$count pages deleted from index.");
+    log("Done pages scan $site_id, $pages pages. $count pages deleted from index.");
   }
   
   //
   // Scan statistic data for existing projects
   //
   private function scan_stats($site_id, $options) {
-    $started = microtime(true);
-    
     extract($options);  
     // 1. Select all records for site_id
     // scan stats
@@ -118,10 +108,8 @@ class TaskScan extends Task {
             echo 'Exception: ', exLine($e), PHP_EOL;
         }
     }
-    $duration = microtime(true) - $started;
     
-    log("Done stats scan $site_id, $pages pages. ".
-         sprintf('This took %1.2f sec.', $duration));
+    log("Done stats scan $site_id, $pages pages.");
   }
     
   //
