@@ -56,6 +56,7 @@ class SIndiegogoPage extends Sqissor {
         $row['deadline'] = date(DATE_ATOM, strtotime($pdata['funding_ends_at']));
         $row['location'] = $pdata['city'];
         $row['category'] = $pdata['category'];
+        $row['project_json'] = $json;
 
         /*
         $row['name'] = $this->queryAttribute('.//meta[@property="og:title"]', "content");

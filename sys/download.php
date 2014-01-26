@@ -3,6 +3,8 @@
 class Download {
   static $maxFetchSize = 20971520;      // 20 MiB
   static $curl;                         // Curl handle. Do not close!!!
+  static $requests = 0;                 // Total download requests, for stats
+  static $timeouts = 0;                 // Timeouts, for stats
 
   public $contextOptions = array();
   public $url;
@@ -80,10 +82,12 @@ class Download {
     //$limit = min(static::$maxFetchSize, PHP_INT_MAX);
      for($retry = 0; $retry < cfg('dlRetry'); $retry++) {
         $this->reply = curl_exec(static::$curl);
+        Download::$requests++;
         $this->write_log();
         if (($errno = curl_errno(static::$curl)) != CURLE_OPERATION_TIMEOUTED) {
             break;
         }
+        Download::$timeouts++;
      } 
     
     switch($errno) {

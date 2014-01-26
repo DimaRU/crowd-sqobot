@@ -75,6 +75,7 @@ class SIndiegogoStats extends Sqissor {
             // Add new record
             Row::setTableName($this->getopt('stats_table'));
             Row::createWith($row);
+            return true;
         }
     }
 }

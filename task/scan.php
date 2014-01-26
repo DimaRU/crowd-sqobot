@@ -9,17 +9,16 @@ class TaskScan extends Task {
   public function getSiteOptions($site_id) {
     if (!$scancfg = cfg("scan $site_id")) die("No scan $site_id configuration string");
 
-    list($index_table, $page_table, $stats_table, $start_page) = explode(' ', trim($scancfg));
+    list($index_table, $page_table, $stats_table, $proto, $start_page) = explode(' ', trim($scancfg));
     $index_table = static::table($index_table);
     $page_table = static::table($page_table);
     $stats_table = static::table($stats_table);
-    $x = compact('index_table', 'page_table', 'stats_table');
-    return $x;
+    return compact('index_table', 'page_table', 'stats_table', 'proto');
   }
   
   public function getSiteStartURL($site_id) {
     if (!$scancfg = cfg("scan $site_id")) die("No scan $site_id configuration string");
-    list($index_table, $page_table, $stats_table, $start_page) = explode(' ', trim($scancfg));
+    list($index_table, $page_table, $stats_table, $proto, $start_page) = explode(' ', trim($scancfg));
     return $start_page;
   }
   
@@ -60,7 +59,7 @@ class TaskScan extends Task {
     foreach($projects as $project) {
         $options['ref_page'] = $project->ref_page;
         try {
-            Sqissor::process("http://" . $project->project_id, $site_id.".Page", $options);
+            Sqissor::process($proto . $project->project_id, $site_id.".Page", $options);
         } catch (\Exception $e) {
             echo 'Exception: ', exLine($e), PHP_EOL;
         }
@@ -100,16 +99,17 @@ class TaskScan extends Task {
     $pages = count($projects);
     echo "Scanning $pages pages stats for $site_id.", PHP_EOL;
     log("Total stats rows for $site_id: ".$pages);
-
+    $newrows = 0;
+    
     foreach($projects as $project) {
         try {
-            Sqissor::process("http://" . $project->project_id, $site_id.".Stats", $options);
+            Sqissor::process($proto . $project->project_id, $site_id.".Stats", $options) and $newrows++;
         } catch (\Exception $e) {
             echo 'Exception: ', exLine($e), PHP_EOL;
         }
     }
     
-    log("Done stats scan $site_id, $pages pages.");
+    log("Done scan stats $site_id, rows processed/new: $pages/$newrows.");
   }
     
   //
@@ -184,14 +184,23 @@ class TaskScan extends Task {
   // Scan index
   function do_index(array $args = null) {
     if ($args === null or !opt(2)) {
-      return print 'scan index SITENAME URL PAGE-TABLE --maxpage=num';
+      return print 'scan index SITENAME URL [OPTION=[VALUE] [...]] --maxpage=num';
     }
 
-    $site_id = opt(0);
-    $url = opt(1);
-    $index_table = cfg('dbPrefix').opt(2);
+    $all = opt();
+    $site = array_shift($all);
+    $url = array_shift($all);
+
+    $options = array();
+
+    foreach ($all as $str) {
+      if (strrchr($str, '=') === false) {
+        $options[$str][] = 1;
+      } else {
+        $options[strtok($str, '=')] = strtok(null);
+      }
+    }
     $maxpage = isset($args['maxpage']) ? $args['maxpage'] : null ;
-    $options = compact('index_table');
 
     $this->scan_index($site_id, $url, $options, $maxpage);
   }
@@ -199,13 +208,23 @@ class TaskScan extends Task {
   // Scan missing pages from index
   function do_pages(array $args = null) {
     if ($args === null or !opt(2)) {
-      return print 'scan pages SITENAME INDEX-TABLE PAGE-TABLE';
+      return print 'scan pages SITENAME [OPTION=[VALUE] [...]]';
     }
 
-    $site_id = opt(0);
-    $index_table = cfg('dbPrefix').opt(1);
-    $page_table = cfg('dbPrefix').opt(2);
-    $options = compact('index_table', 'page_table');
+    $all = opt();
+    $site = array_shift($all);
+    $url = array_shift($all);
+
+    $options = array();
+
+    foreach ($all as $str) {
+      if (strrchr($str, '=') === false) {
+        $options[$str][] = 1;
+      } else {
+        $options[strtok($str, '=')] = strtok(null);
+      }
+    }
+
     $this->scan_pages($site_id, $options);
   }
   
