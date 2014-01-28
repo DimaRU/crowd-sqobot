@@ -63,7 +63,7 @@ class SKickstarterPage extends Sqissor {
         $row['project_id'] = strstr($pdata['urls']['web']['project'], $this->domain());
         $row['name'] = $pdata['name'];
         $row['blurb'] = $pdata['blurb'];
-        $row['avatar'] = strstr(str_replace("https://", "http://", $pdata['photo']['small']), "?", true);
+        $row['avatar'] = strstr($pdata['photo']['small'], "?", true);
         $row['goal'] = $pdata['goal'];
         $row['country'] = $pdata['country'];
         $row['currency'] = $pdata['currency'];

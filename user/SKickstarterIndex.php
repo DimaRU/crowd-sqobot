@@ -16,12 +16,12 @@ class SKickstarterIndex extends Sqissor {
         $row = array(
         'site_id' => 'kickstarter',
         'load_time' => date(DATE_ATOM),
-        'ref_page' => str_replace("http://", "", $this->url));
+        'ref_page' => strstr($this->url, $this->domain()) );
         Row::setTableName($this->getopt('index_table'));
         
         $index = json_decode($data, true);
         foreach ($index['projects'] as $project) {
-            $row['project_id'] = str_replace("http://", "", $project['urls']['web']['project']);
+            $row['project_id'] = strstr($project['urls']['web']['project'], $this->domain());
             Row::createIgnoreWith($row);
         }
         

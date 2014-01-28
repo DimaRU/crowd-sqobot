@@ -13,13 +13,12 @@ class TaskScan extends Task {
     $index_table = static::table($index_table);
     $page_table = static::table($page_table);
     $stats_table = static::table($stats_table);
-    return compact('index_table', 'page_table', 'stats_table', 'proto');
+    return compact('index_table', 'page_table', 'stats_table', 'proto', 'start_page');
   }
   
   public function getSiteStartURL($site_id) {
-    if (!$scancfg = cfg("scan $site_id")) die("No scan $site_id configuration string");
-    list($index_table, $page_table, $stats_table, $proto, $start_page) = explode(' ', trim($scancfg));
-    return $start_page;
+    $options = $this->getSiteOptions($site_id);
+    return $options['start_page'];
   }
   
   private function scan_index($site_id, $url, $options, $maxpage = null) {
