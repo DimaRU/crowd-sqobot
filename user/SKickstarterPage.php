@@ -9,23 +9,32 @@ class SKickstarterPage extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
     static $accept = "text/html";
     
-    protected function doSlice($data, array $extra) {
+    protected function doSlice($data) {
         $row = array('site_id' => 'kickstarter', 
                      'load_time' => date(DATE_ATOM),
-                     'ref_page' => isset($extra['ref_page']) ? $extra['ref_page'] : null,
+                     'project_id' => strstr($this->url, $this->domain()),
+                     'ref_page' => $this->getopt('ref_page'),
                      'mailformed' => 0
             );
+        Row::setTableName($this->getopt('page_table'));
+
+        if (Download::httpReturnCode() == 404) {
+            $row['state'] = "404";
+            Row::createOrReplaceWith($row);
+            return;
+        }
+
         $this->initDom($data);
         try {
             $this->parsePage($data, $row);
         } catch (ESqissor $e) {
             $row['mailformed'] = 1;
-            ProjectPageRow::createOrReplaceWith($row);
+            Row::createOrReplaceWith($row);
             throw $e;
         }
-        ProjectPageRow::createOrReplaceWith($row);
+        Row::createOrReplaceWith($row);
     }
-    
+
     private function parsePage(&$data, &$row) {
         //$htmlstr = 'window.current_project = "{ .... }";1234';
         if (($pos1 = strpos($data, 'window.current_project')) === false) {
@@ -54,7 +63,7 @@ class SKickstarterPage extends Sqissor {
         $row['project_id'] = strstr($pdata['urls']['web']['project'], $this->domain());
         $row['name'] = $pdata['name'];
         $row['blurb'] = $pdata['blurb'];
-        $row['avatar'] = strstr(str_replace("https://", "http://", $pdata['photo']['small']), "?", true);
+        $row['avatar'] = strstr($pdata['photo']['small'], "?", true);
         $row['goal'] = $pdata['goal'];
         $row['country'] = $pdata['country'];
         $row['currency'] = $pdata['currency'];
@@ -72,5 +81,6 @@ class SKickstarterPage extends Sqissor {
         $row['location_url'] = $pdata['location']['urls']['web']['discover'];
         $row['category'] = $pdata['category']['name'];
         $row['short_url'] = $pdata['urls']['web']['project_short'];
+        $row['state'] = $pdata['state'];
     }
 }

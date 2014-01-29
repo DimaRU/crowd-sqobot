@@ -3,8 +3,8 @@
 -- http://www.phpmyadmin.net
 --
 -- Хост: localhost
--- Время создания: Дек 20 2013 г., 23:07
--- Версия сервера: 5.1.69
+-- Время создания: Янв 11 2014 г., 13:58
+-- Версия сервера: 5.1.71
 -- Версия PHP: 5.3.3
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS `st_project_page` (
   `site_id` varchar(20) NOT NULL,
   `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
   `name` varchar(100) NOT NULL,
+  `state` varchar(10) DEFAULT NULL COMMENT 'Состояние проекта',
   `blurb` varchar(255) NOT NULL,
   `avatar` varchar(200) DEFAULT NULL COMMENT 'Avatar image ref',
   `goal` int(11) NOT NULL,
@@ -78,6 +79,25 @@ CREATE TABLE IF NOT EXISTS `st_project_page` (
   KEY `daily` (`daily`),
   KEY `weekly` (`weekly`),
   KEY `malformed` (`mailformed`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `st_project_stats`
+--
+
+CREATE TABLE IF NOT EXISTS `st_project_stats` (
+  `load_time` datetime NOT NULL COMMENT 'Время загрузки страницы с данными',
+  `site_id` varchar(20) NOT NULL,
+  `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
+  `pledged` bigint(20) NOT NULL,
+  `backers_count` int(11) NOT NULL,
+  `comments_count` int(11) NOT NULL,
+  `updates_count` int(11) NOT NULL,
+  `project_json` text,
+  PRIMARY KEY (`load_time`,`project_id`),
+  KEY `site_id` (`site_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -130,7 +150,7 @@ CREATE TABLE IF NOT EXISTS `wp_users` (
   PRIMARY KEY (`ID`),
   KEY `user_login_key` (`user_login`),
   KEY `user_nicename` (`user_nicename`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=3 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

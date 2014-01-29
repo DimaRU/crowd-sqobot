@@ -1,0 +1,1 @@
+./cli scan url Indiegogo.Page "http://www.indiegogo.com/projects/pour-que-marine-puisse-avoir-le-choix" index_table=st_site_index page_table=st_project_page stats_table=st_project_stats

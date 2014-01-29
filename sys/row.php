@@ -2,26 +2,56 @@
 
 class Row {
   static $defaultTable;
-  static $fields = array('id');
-
-  public $table;
+  static $table;
+  
+  private $row;
+  private $where;
   public $id;
 
-  static function tableName($table = null) {
+  static function setTableName($table = null) {
     if (!$table) {
       if ($table = static::$defaultTable) {
-        $table = cfg('dbPrefix').$table;
+        static::$table = cfg('dbPrefix').static::$defaultTable;
+      } else {
+        $class = get_called_class();
+        throw new Error("No default table specified for Row class $class.");
+      }
+    } else {
+        static::$table = $table;
+    }
+    return static::$table;
+  }
+
+  function getTableName() {
+    if (!static::$table) {
+      if (static::$defaultTable) {
+        static::$table = cfg('dbPrefix').static::$defaultTable;
       } else {
         $class = get_called_class();
         throw new Error("No default table specified for Row class $class.");
       }
     }
+    return static::$table;
+  }
 
-    return $table;
+  static function make($fields = array(), $where = array()) {
+    return new static($fields, $where);
+  }
+
+  //* $fields stdClass, hash
+  function __construct($fields = array(), $where = array()) {
+    $this->defaults();
+    $this->row = $fields;
+    $this->where = $where;
+  }
+
+  // Must return $this.
+  function defaults() {
+    return $this;
   }
 
   static function count(array $fields = null) {
-    $sql = 'SELECT COUNT(1) AS count FROM `'.static::tableName().'`';
+    $sql = 'SELECT COUNT(1) AS count FROM `'.static::$table.'`';
     $fields and $sql .= ' WHERE '.join(' AND ', S($fields, '#"`?` = ??"'));
 
     $stmt = exec($sql, array_values((array) $fields));
@@ -31,81 +61,24 @@ class Row {
     return $count;
   }
 
-  static function make($fields = array()) {
-    return new static($fields);
-  }
-
-  //* $fields stdClass, hash
-  function __construct($fields = array()) {
-    $this->defaults()->fill($fields);
-  }
-
-  //* $fields stdClass, hash
-  function fill($fields) {
-    is_object($fields) and $fields = get_object_vars($fields);
-
-    foreach (static::$fields as $field) {
-      isset($fields[$field]) and $this->$field = $fields[$field];
-    }
-
-    return $this;
-  }
-
-  // Must return $this.
-  function defaults() {
-    return $this;
-  }
-
   // See create(), createWith(), createIgnore() and others.
   protected function doCreate($method, $sqlVerb) {
-    $bind = $this->sqlFields();
-    unset($bind['id']);
+    list($fields, $bind) = S::divide($this->row);
 
-    list($fields, $bind) = S::divide($bind);
-
-    $sql = "$sqlVerb INTO `".$this->table().'`'.
+    $sql = "$sqlVerb INTO `".$this->getTableName().'`'.
            ' (`'.join('`, `', $fields).'`) VALUES'.
            ' ('.join(', ', S($bind, '"??"')).')';
-
-    $id = exec($sql, $bind);
+    $this->id = exec($sql, $bind);
     
-
-    in_array('id', static::$fields) and $this->id = $id;
     return $this;
   }
 
   // See update(), updateWith(), updateIgnore() and others.
   protected function doUpdate($method, $sqlVerb) {
-    $fields = S(static::$fields, '"`?` = ?"');
-    $bind = array_values($this->sqlFields());
-
-    $sql = "$sqlVerb `".$this->table().'` SET `'.join(', ', $fields).
-           ' WHERE site = :site AND site_id = :site_id';
-    exec($sql, $bind);
+    $sql = "$sqlVerb `".$this->getTableName().'` SET '.join(', ', S($this->row, '#"`?` = \"?\""')).
+           ' WHERE '.join('AND ', S($this->where, '#"`?` = \"?\""'));
+    exec($sql);
     return $this;
-  }
-
-  function table($new = null) {
-    if (func_num_args()) {
-      $this->table = $new;
-      return $this;
-    } else {
-      return static::tableName($this->table);
-    }
-  }
-
-  function sqlFields() {
-    $result = array();
-
-    foreach (static::$fields as $field) {
-      if ($this->$field instanceof \DateTime) {
-        $result[$field] = S::sqlDateTime($this->$field->getTimestamp());
-      } else {
-        $result[$field] = $this->$field;
-      }
-    }
-
-    return $result;
   }
 
   /*---------------------------------------------------------------------
@@ -128,13 +101,13 @@ class Row {
   }
 
   //= Row updated entry
-  static function updateWith($fields) {
-    return static::make($fields)->update();
+  static function updateWith($fields, $where) {
+    return static::make($fields, $where)->update();
   }
 
   //= Row updated entry
-  static function updateIgnoreWith($fields) {
-    return static::make($fields)->updateIgnore();
+  static function updateIgnoreWith($fields, $where) {
+    return static::make($fields, $where)->updateIgnore();
   }
 
   //= $this

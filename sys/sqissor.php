@@ -67,7 +67,7 @@ abstract class Sqissor {
 
   function sliceURL($url) {
     $this->url = $url;
-    log("Process $url");
+    log("Process {$this->name} $url", 'debug');
     $referer = dirname($url);
     strrchr($referer, '/') === false and $referer = null;
     return $this->slice(download($url, array('referer'  => $referer, 'accept' => static::$accept)));
@@ -100,25 +100,22 @@ abstract class Sqissor {
   //
   //? doSlice('<!DOCTYPE html><html>...</html>', array('a' => 'b'))
   //
-  protected abstract function doSlice($data, array $extra);
+  protected abstract function doSlice($data);
 
   //
-  // Return associaed domain name;
+  // Return associated domain name;
   //
   function domain() {
       return static::$domain_name;
   }
   
   //
-  // Returns extra data associated with this item.
-  // Empty array is returned if no extra was assigned.
+  // Return option value
   //
-  //= array
-  //
-  function extra() {
-    return $this->options;
+  function getopt($optname) {
+      return isset($this->options[$optname]) ? $this->options[$optname] : null;
   }
-
+  
   //
   // Matches given $regexp against string $str optionally returning pocket of given
   // index $return. If $return is null all pockets are returned. If not an error

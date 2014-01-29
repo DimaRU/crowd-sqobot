@@ -3,12 +3,14 @@
 class Download {
   static $maxFetchSize = 20971520;      // 20 MiB
   static $curl;                         // Curl handle. Do not close!!!
+  static $requests = 0;                 // Total download requests, for stats
+  static $timeouts = 0;                 // Timeouts, for stats
 
   public $contextOptions = array();
   public $url;
   public $headers;
 
-  public $responseHeaders = array();
+  static $responseHeaders;
   public $reply;
 
   static function it($url, $headers = array()) {
@@ -20,6 +22,7 @@ class Download {
   }
 
   function __construct() {
+    static::$responseHeaders = array();
     if (!Download::$curl) {
         Download::$curl = curl_init();
     }
@@ -31,7 +34,7 @@ class Download {
         CURLOPT_HEADER         => false,                            // don't return headers
         CURLOPT_FOLLOWLOCATION => cfg('dlRedirects') > 0,           // follow redirects
         CURLOPT_MAXREDIRS      => max(0, (int) cfg('dlRedirects')), // stop after 10 redirects
-        CURLOPT_FAILONERROR    => !!cfg('dlFetchOnError'),
+        CURLOPT_FAILONERROR    => !cfg('dlFetchOnError'),
         CURLOPT_AUTOREFERER    => true,                             // set referer on redirect
         CURLOPT_CONNECTTIMEOUT => 120,                              // timeout on connect
         CURLOPT_TIMEOUT        => (float) cfg('dlTimeout'),         // timeout on response
@@ -45,7 +48,7 @@ class Download {
   }
 
   function __destruct() {
-    $this->close();
+    //$this->close();
   }
 
   function url($new = null) {
@@ -77,12 +80,29 @@ class Download {
 
   function read() {
     //$limit = min(static::$maxFetchSize, PHP_INT_MAX);
-    $this->reply = curl_exec(Download::$curl);
-    $this->write_log();
-    if ($this->reply === false) {
-      throw new \RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
+     for($retry = 0; $retry < cfg('dlRetry'); $retry++) {
+        $this->reply = curl_exec(static::$curl);
+        Download::$requests++;
+        $this->write_log();
+        if (($errno = curl_errno(static::$curl)) != CURLE_OPERATION_TIMEOUTED) {
+            break;
+        }
+        Download::$timeouts++;
+     } 
+    
+    switch($errno) {
+      case CURLE_OK:
+          if (in_array(static::httpReturnCode(), array(0,200))) {
+            return $this;
+          }
+      case CURLE_HTTP_NOT_FOUND:
+          warn("Return http code:".static::httpReturnCode()." ".$this->url);
+        if (static::httpReturnCode() == 404) {
+             return $this;
+        }
+      default :
+        throw new \RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
     }
-    return $this;
   }
 
   function close() {
@@ -92,7 +112,7 @@ class Download {
   }
   
   private function _set_header_callback($ch, $header) {
-        $this->responseHeaders[] = $header;
+        static::$responseHeaders[] = $header;
         return strlen($header);
   } 
 
@@ -111,7 +131,7 @@ class Download {
     }
   }
 
-  
+
   //= array of scalar like 'Accept: text/html'
   function normalizeHeaders() {
     foreach (get_class_methods($this) as $func) {
@@ -183,8 +203,18 @@ class Download {
     return strftime( opt('dlLog', cfg('dlLog')) );
   }
 
-  function gethttpCode() {
-      curl_getinfo(Download::$curl, CURLINFO_HTTP_CODE);
+  static function httpReturnCode() {
+    return curl_getinfo(Download::$curl, CURLINFO_HTTP_CODE);
+  }
+  static function httpMovedURL() {
+      if (array_search("Status: 301 Moved Permanently", static::$responseHeaders) !== NULL) {
+          foreach (static::$responseHeaders as $hdr) {
+              if (strpos($hdr, "Location:") !== false) {
+                  return trim(str_replace("Location:", "", $hdr));
+              }
+          }
+      }
+      return false;
   }
   
   // Create log record
@@ -222,7 +252,7 @@ class Download {
     $result .= "Stats:\n\n".static::joinIndent($stats)."\n\n";
 
     // Response
-    $this->responseHeaders and $result .= "Response:\n\n".static::joinHeaders($this->responseHeaders)."\n";
+    static::$responseHeaders and $result .= "Response:\n\n".static::joinHeaders(static::$responseHeaders)."\n";
 
     return $result;
   }
