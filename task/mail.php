@@ -62,7 +62,7 @@ class TaskMail extends Task {
 
     $started = microtime(true);
     
-    // Create unmailer projects snapshot
+    // Create unmailed projects snapshot
     $sql = "INSERT INTO $newmail_table (project_id, digest )\n"
         . "SELECT $page_table.project_id, \"$digest\"\n"
         . "FROM $page_table\n"

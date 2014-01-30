@@ -2,17 +2,13 @@
 
 // Scan kickstarter.com new projects
 class TaskScan extends Task {
-  static function table($table) {
-    return cfg('dbPrefix').$table;
-  }
-  
   public function getSiteOptions($site_id) {
     if (!$scancfg = cfg("scan $site_id")) die("No scan $site_id configuration string");
 
     list($index_table, $page_table, $stats_table, $proto, $start_page) = explode(' ', trim($scancfg));
-    $index_table = static::table($index_table);
-    $page_table = static::table($page_table);
-    $stats_table = static::table($stats_table);
+    $index_table = cfg('dbPrefix').$index_table;
+    $page_table = cfg('dbPrefix').$page_table;
+    $stats_table = cfg('dbPrefix').$stats_table;
     return compact('index_table', 'page_table', 'stats_table', 'proto', 'start_page');
   }
   
