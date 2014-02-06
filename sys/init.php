@@ -14,7 +14,7 @@ set_time_limit(24 * 3600);
 
 require_once ROOT.'sys/core.php';
 require_once ROOT.'lib/squall.php';
-require_once ROOT.'swiftmailer/lib/swift_required.php';
+//require_once ROOT.'swiftmailer/lib/swift_required.php';
 
 \Squall\initEx(NS);
 
@@ -64,8 +64,8 @@ spl_autoload_register(function ($class) {
     }
   }
 
-  warn("Cannot autoload class [$class] from either of these paths:".
-       join("\n  ", S::prepend($files, '')));
+  log("Cannot autoload class [$class] from either of these paths:".
+       join("\n  ", S::prepend($files, '')), 'debug');
 });
 
 register_shutdown_function(function () {

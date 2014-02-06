@@ -4,6 +4,9 @@
  * Copyright (C) 2013 Dmitry Borovikov.
  */
 
+require_once './lib/Twig/Autoloader.php';
+require_once './swiftmailer/lib/swift_required.php';
+
 // Form email body and send mail message
 class NewsMailer {
     protected $category = "";
@@ -11,22 +14,24 @@ class NewsMailer {
     protected $body = "";
     
     protected $contentlines = 0;
-    protected $transport;
     protected $message;
+    protected $twig;
             
-  function __construct($address, $name) {
-    // Create the mail transport configuration
-    // TODO: get params from cfg
-    $this->transport = \Swift_SmtpTransport::newInstance('172.16.1.1',25);
+  function __construct($templateName) {
     // Create the message
     $this->message = \Swift_Message::newInstance();
-    
-    $this->message->setFrom("robot@bdm.org.ru", "Crowd scan robot");
-    $this->message->setTo(array($address => $name));
-    
-  }
-  function getContentLines() {
-      return $this->contentlines;
+    \Twig_Autoloader::register();
+    $loader = new \Twig_Loader_Filesystem(cfg('twigTemplates'));
+    $twig = new \Twig_Environment($loader, array(
+        'cache' => cfg('twigCache'),
+        'auto_reload' => true,
+    ));
+    $template = $twig->loadTemplate($templateName);
+        // Get the subject block out
+        // If the block doesn't exist, use a default
+    //    $subject = ($template->hasBlock("subject")
+    //        ? $template->renderBlock("subject", array("param1" => $someInformation->foo))
+    //        : "Default subject here");
   }
     //
     function addLine($s) {
@@ -77,16 +82,24 @@ class NewsMailer {
     }
     
     function addHeader($digest) {
-        if ($this->contentlines == 0)
-            $this->body = "<h2>No new projects from latest $digest email.</h2>";
     }
     
     function addFooter($digest) {
         $this->body .= "<p>Please do not reply to this message</p>";
     }
     
-    function send() {
+    function send($digest, $address, $name) {
+        if ($this->contentlines == 0) return;
+
+        $this->addSubject(ucfirst($digest)." new projects digest.");
+        $this->addHeader($digest);
+        $this->addFooter($digest);
+        // Create the mail transport configuration
+        // TODO: get params from cfg
+        $this->transport = \Swift_SmtpTransport::newInstance('172.16.1.1',25);
         $this->message->setBody($this->body, 'text/html');
+        $this->message->setFrom("robot@bdm.org.ru", "Crowd scan robot");
+        $this->message->setTo(array($address => $name));
         $mailer = \Swift_Mailer::newInstance($this->transport);
         $result = $mailer->send($this->message);
         // TODO: add result check

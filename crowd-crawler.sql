@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Хост: localhost
--- Время создания: Янв 11 2014 г., 13:58
+-- Время создания: Фев 05 2014 г., 19:12
 -- Версия сервера: 5.1.71
 -- Версия PHP: 5.3.3
 
@@ -27,9 +27,11 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE IF NOT EXISTS `st_newmail_table` (
+  `site_id` varchar(20) NOT NULL,
   `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
   `digest` varchar(10) NOT NULL,
-  UNIQUE KEY `project_id` (`project_id`,`digest`)
+  UNIQUE KEY `project_id` (`project_id`,`digest`),
+  KEY `site_id` (`site_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -97,7 +99,8 @@ CREATE TABLE IF NOT EXISTS `st_project_stats` (
   `updates_count` int(11) NOT NULL,
   `project_json` text,
   PRIMARY KEY (`load_time`,`project_id`),
-  KEY `site_id` (`site_id`)
+  KEY `site_id` (`site_id`),
+  KEY `project_id` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -150,7 +153,7 @@ CREATE TABLE IF NOT EXISTS `wp_users` (
   PRIMARY KEY (`ID`),
   KEY `user_login_key` (`user_login`),
   KEY `user_nicename` (`user_nicename`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=3 ;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

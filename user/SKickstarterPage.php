@@ -81,6 +81,6 @@ class SKickstarterPage extends Sqissor {
         $row['location_url'] = $pdata['location']['urls']['web']['discover'];
         $row['category'] = $pdata['category']['name'];
         $row['short_url'] = $pdata['urls']['web']['project_short'];
-        $row['state'] = $pdata['state'];
+        if ($pdata['state'] != 'live') { $row['state'] = $pdata['state']; }
     }
 }

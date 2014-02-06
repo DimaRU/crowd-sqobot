@@ -2,23 +2,19 @@
 
 // Scan kickstarter.com new projects
 class TaskScan extends Task {
-  static function table($table) {
-    return cfg('dbPrefix').$table;
-  }
-  
-  public function getSiteOptions($site_id) {
-    if (!$scancfg = cfg("scan $site_id")) die("No scan $site_id configuration string");
-
-    list($index_table, $page_table, $stats_table, $proto, $start_page) = explode(' ', trim($scancfg));
-    $index_table = static::table($index_table);
-    $page_table = static::table($page_table);
-    $stats_table = static::table($stats_table);
-    return compact('index_table', 'page_table', 'stats_table', 'proto', 'start_page');
+  public function getDbOptions($site_id) {
+    $opt = cfgDbOptions("dbNames");
+    return $opt[$site_id];
   }
   
   public function getSiteStartURL($site_id) {
-    $options = $this->getSiteOptions($site_id);
-    return $options['start_page'];
+    $opt = cfgOptions("scan");
+    return $opt[$site_id]['start_page'];
+  }
+
+  public function getSiteProto($site_id) {
+    $opt = cfgOptions("scan");
+    return $opt[$site_id]['proto'];
   }
   
   private function scan_index($site_id, $url, $options, $maxpage = null) {
@@ -43,6 +39,7 @@ class TaskScan extends Task {
 
   private function scan_pages($site_id, $options) {
     extract($options);
+    $proto = $this->getSiteProto($site_id);
     // Fetch all new projects
     $sql =  "SELECT `$index_table`.project_id, `$index_table`.ref_page ".
             "FROM `$index_table` ".
@@ -85,6 +82,7 @@ class TaskScan extends Task {
   //
   private function scan_stats($site_id, $options) {
     extract($options);  
+    $proto = $this->getSiteProto($site_id);
     // 1. Select all records for site_id
     // scan stats
     // Fetch all new projects
@@ -119,7 +117,7 @@ class TaskScan extends Task {
       return print 'scan new SITENAME --maxpage=num';
     }
     $site_id = opt(0);
-    $options = $this->getSiteOptions($site_id);
+    $options = $this->getDbOptions($site_id);
     $maxpage = isset($args['maxpage']) ? $args['maxpage'] : null ;
 
     try {
@@ -138,7 +136,7 @@ class TaskScan extends Task {
       return print 'scan stats SITENAME';
     }
     $site_id = opt(0);
-    $options = $this->getSiteOptions($site_id);
+    $options = $this->getDbOptions($site_id);
 
     $this->scan_stats($site_id, $options);
   }

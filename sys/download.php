@@ -96,10 +96,10 @@ class Download {
             return $this;
           }
       case CURLE_HTTP_NOT_FOUND:
-          warn("Return http code:".static::httpReturnCode()." ".$this->url);
-        if (static::httpReturnCode() == 404) {
+          log("Return http code:".static::httpReturnCode()." ".$this->url, (static::httpReturnCode() == 404) ? 'warn':'error');
+          if (static::httpReturnCode() == 404) {
              return $this;
-        }
+          }
       default :
         throw new \RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
     }
