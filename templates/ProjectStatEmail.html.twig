@@ -9,7 +9,7 @@ Crowd scan robot
 {%- endblock %}
 
 {% block subject -%}
-{{ digest|title }} new projects digest.
+{{ digest|title }} stats by site and category.
 {%- endblock %}
 
 {% block header %}
@@ -18,30 +18,9 @@ Crowd scan robot
 {% block footer %}
 {% endblock %}
 
-{% block kickstarter %}
-<h2>Kickstarter</h2>
-    {% set category = '' %}
+{% block body %}
+<h2>{{ site_id|title }}</h2>
     {% for row in rows %}
-      {% if category != row.category %}
-        <h3>{{ row.category }}</h3>
-      {% set category = row.category %}  
-      {% endif %}
-      <div>
-        <a href="{{row.short_url}}" class="project line" title="{{row.blurb}}">{{row.name}}</a>
-      </div>
-    {% endfor %}
-{% endblock %}
-
-{% block indiegogo %}
-<h2>Indiegogo</h2>
-    {% set category = '' %}
-    {% for row in rows %}
-      {% if category != row.category %}
-        <h3>{{ row.category }}</h3>
-      {% set category = row.category %}  
-      {% endif %}
-      <div>
-        <a href="{{row.short_url}}" class="project line" title="{{row.blurb}}">{{row.name}}</a>
-      </div>
+<div><span style="width: 140px; float: left;"> {{ row.category }}&nbsp;</span>{{ row.count }}</div>
     {% endfor %}
 {% endblock %}

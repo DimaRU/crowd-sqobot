@@ -34,15 +34,11 @@ class NewsMailer {
         : "Block $block does not defined";
   }
   
-    function addBlockContent($site_id, $rows) {
-        $this->body .= $this->renderBlock($site_id, $rows);
+    function addBodyContent($rows, $block = "body") {
+        $this->body .= $this->renderBlock($block, $rows);
         $this->contentlines++;
     }
     
-    function addBodyContent($rows) {
-        $this->addBlockContent("body", $rows);
-    }
-
     function addHeader($digest) {
         $this->body = $this->renderBlock("header", $digest) . $this->body;
     }

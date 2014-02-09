@@ -16,7 +16,7 @@ class TaskMail extends Task {
 // Create and send email for this user
   function mail_user($user, $digest) {
     $id = $user->ID;
-    $mailer = new NewsMailer('Projectemail.html.twig');
+    $mailer = new NewsMailer('ProjectEmail.html.twig');
     
     $dbNames = cfgDbOptions('dbNames');
     $dbComNames = cfgDbOptions('dbComNames');
@@ -41,7 +41,7 @@ class TaskMail extends Task {
         $stmt->closeCursor();
 
         if (count($rows)) {
-            $mailer->addBlockContent($site_id, array('rows' => $rows));
+            $mailer->addBodyContent(array('rows' => $rows), $site_id);
         }
     }
 
@@ -103,10 +103,7 @@ class TaskMail extends Task {
     log("Done emailing $digest digest. ");
   }
   
-/*
   function do_stat(array $args = null) {
-    $page_table = static::table(static::$page_table);
-
     if ($args === null or !opt(1)) {
       return print 'mail stat {hourly|daily|weekly] EMAIL}';
     }
@@ -116,32 +113,25 @@ class TaskMail extends Task {
     if (!in_array($digest, array('hourly', 'daily', 'weekly')))
             return print 'Invalid argument. Only hourly|daily|weekly allowed.'. PHP_EOL;
     
-    $mailer = new NewsMailer($email, "");
+    echo "Emailing $digest statictic", PHP_EOL;
 
-    $sql = "SELECT $page_table.site_id, $page_table.category, Count($page_table.category) AS `count`\n"
-    . "FROM $page_table\n"
-    . "WHERE $page_table.$digest = 0\n"
-    . "GROUP BY $page_table.site_id, $page_table.category";
-    $stmt = exec($sql);
-    $stats = $stmt->fetchAll();
-    $stmt->closeCursor();
+    $mailer = new NewsMailer('ProjectStatEmail.html.twig');
 
-    // Add one line with stats (category, count)
-    function addStatLine($row) {
-        $this->addSiteHeader($row->site_id);
-        
-        $s = '<div><span style="width: 140px; float: left;">'.$row->category.'&nbsp;</span>'.$row->count.'</div>';
-        $this->addLine($s);
-        $this->contentlines++;
+    $dbNames = cfgDbOptions('dbNames');
+    $dbComNames = cfgDbOptions('dbComNames');
+    extract($dbComNames['common']);        // subs_table newmail_table
+    
+    foreach ($dbNames as $site_id => $dbNameList) {
+        extract($dbNameList);
+        $sql = "SELECT $page_table.site_id, $page_table.category, Count($page_table.category) AS `count`\n"
+        . "FROM $page_table\n"
+        . "WHERE $page_table.$digest = 0 AND $page_table.site_id = \"$site_id\"\n"
+        . "GROUP BY $page_table.site_id, $page_table.category";
+        $stmt = exec($sql);
+        $stats = $stmt->fetchAll();
+        $stmt->closeCursor();
+        $mailer->addBodyContent(array('rows' => $stats, 'site_id' => $site_id));
     }
-
-    foreach ($stats as $row) {
-      $mailer->addStatLine($row);
-    }
-    $mailer->addSubject(ucfirst($digest)." stats by site and category.");
-    $mailer->addHeader($digest);
-    $mailer->addFooter($digest);
-    $mailer->send();
+    $mailer->send($digest, $email, "");
   }  
- */
 }
