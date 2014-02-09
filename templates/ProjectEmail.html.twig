@@ -1,0 +1,47 @@
+{% extends 'email.html.twig' %}
+
+{% block from -%}
+robot@bdm.org.ru
+{%- endblock %}
+
+{% block fromname -%}
+Crowd scan robot
+{%- endblock %}
+
+{% block subject -%}
+{{ digest|title }} new projects digest.
+{%- endblock %}
+
+{% block header %}
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
+
+{% block kickstarter %}
+<h2>Kickstarter</h2>
+    {% set category = '' %}
+    {% for row in rows %}
+      {% if category != row.category %}
+        <h3>{{ row.category }}</h3>
+      {% set category = row.category %}  
+      {% endif %}
+      <div>
+        <a href="{{row.short_url}}" class="project line" title="{{row.blurb}}">{{row.name}}</a>
+      </div>
+    {% endfor %}
+{% endblock %}
+
+{% block indiegogo %}
+<h2>Indiegogo</h2>
+    {% set category = '' %}
+    {% for row in rows %}
+      {% if category != row.category %}
+        <h3>{{ row.category }}</h3>
+      {% set category = row.category %}  
+      {% endif %}
+      <div>
+        <a href="{{row.short_url}}" class="project line" title="{{row.blurb}}">{{row.name}}</a>
+      </div>
+    {% endfor %}
+{% endblock %}

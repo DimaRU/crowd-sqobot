@@ -3,23 +3,6 @@
 abstract class Task {
   public $name;
 
-  //* $web null list both CLI and web tasks, bool
-  //= array of str 'atoms', 'queue', ... suitable for factory()
-  static function all($web = false) {
-    $standard = S(glob(ROOT.'task/*.php', GLOB_NOESCAPE), array('.basename', '.php'));
-    $user = S(glob(USER.'user/[Tt]ask*.php', GLOB_NOESCAPE),
-              array('|', 'basename', array('.substr', 4, -4)));
-    $tasks = array_unique(S::down(array_merge($standard, $user)));
-
-    if ($web === null) {
-      return $tasks;
-    } else {
-      return S::build($tasks, function ($name) use ($web) {
-        if (($web ^ S::unprefix($name, 'web')) == 0) { return $name; }
-      });
-    }
-  }
-
   static function make($task) {
     $class = static::factory($task);
     return new $class;

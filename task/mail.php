@@ -4,19 +4,29 @@
  *
  */
 class TaskMail extends Task {
-  // Create and send email for this user
+
+  protected function mailFields($page_table) {
+    $mailFields = explode(" ", cfg("mailFields"));
+    array_walk($mailFields, function(&$s) use ($page_table) {
+               $s = $page_table. "." . $s;
+               });
+    return join(', ', $mailFields);
+}
+
+// Create and send email for this user
   function mail_user($user, $digest) {
     $id = $user->ID;
-    $mailer = new NewsMailer('email.html.twig');
+    $mailer = new NewsMailer('Projectemail.html.twig');
     
     $dbNames = cfgDbOptions('dbNames');
     $dbComNames = cfgDbOptions('dbComNames');
     extract($dbComNames['common']);        // subs_table newmail_table
-
+    
     foreach ($dbNames as $site_id => $dbNameList) {
         extract($dbNameList);
+        $mailFields = $this->mailFields($page_table);
         // Select subsribed sities and categories for site
-        $sql = "SELECT $page_table.site_id, $page_table.category, $page_table.name, $page_table.short_url, $page_table.blurb\n"
+        $sql = "SELECT ".$mailFields. "\n"
         . "FROM ($subs_table INNER JOIN $page_table ON ($subs_table.category = $page_table.category) "
         . "AND ($subs_table.site_id = $page_table.site_id)) INNER JOIN $newmail_table ON $page_table.project_id = $newmail_table.project_id\n"
         . "WHERE $page_table.site_id = \"$site_id\" AND "
@@ -24,15 +34,15 @@ class TaskMail extends Task {
                 . "$page_table.state IS NULL AND "
                 . "$subs_table.ID = $id AND "
                 . "$newmail_table.digest = \"$digest\"\n"
-        . "ORDER BY $page_table.category, $page_table.campaign_type";
+        . "ORDER BY $mailFields";
         $stmt = exec($sql);
-        
-        echo $stmt->rowCount(),PHP_EOL; 
-
-        while ($row = $stmt->fetch()) {
-          $mailer->addContentLine($row);
-        }
+        //echo $stmt->rowCount(),PHP_EOL; 
+        $rows = $stmt->fetchAll();
         $stmt->closeCursor();
+
+        if (count($rows)) {
+            $mailer->addBlockContent($site_id, array('rows' => $rows));
+        }
     }
 
     $mailer->send($digest, $user->user_email, $user->display_name);
@@ -92,7 +102,8 @@ class TaskMail extends Task {
 
     log("Done emailing $digest digest. ");
   }
-
+  
+/*
   function do_stat(array $args = null) {
     $page_table = static::table(static::$page_table);
 
@@ -113,6 +124,16 @@ class TaskMail extends Task {
     . "GROUP BY $page_table.site_id, $page_table.category";
     $stmt = exec($sql);
     $stats = $stmt->fetchAll();
+    $stmt->closeCursor();
+
+    // Add one line with stats (category, count)
+    function addStatLine($row) {
+        $this->addSiteHeader($row->site_id);
+        
+        $s = '<div><span style="width: 140px; float: left;">'.$row->category.'&nbsp;</span>'.$row->count.'</div>';
+        $this->addLine($s);
+        $this->contentlines++;
+    }
 
     foreach ($stats as $row) {
       $mailer->addStatLine($row);
@@ -122,4 +143,5 @@ class TaskMail extends Task {
     $mailer->addFooter($digest);
     $mailer->send();
   }  
+ */
 }

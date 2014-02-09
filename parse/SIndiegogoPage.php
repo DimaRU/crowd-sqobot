@@ -87,8 +87,8 @@ class SIndiegogoPage extends Sqissor {
         $row['campaign_type'] = $this->queryValue('.//p[@class="amount bold fl title"]');
         $row['short_url'] = $this->queryAttribute('.//input[@name="sharing_url"]', "value");
         $row['avatar'] = strstr($this->queryAttribute('.//img[@class="fl avatar"]', "src"), "?", true);
-        // <div class="fl information"><a href="/individuals/4630424" class="name bold">Sanderson Jones</a>
-        $row['creator_name'] = $this->queryValue('.//div[@class="fl information"]/a');
+        // <div class="fl information member"><a href="/individuals/4630424" class="name bold">Sanderson Jones</a>
+        $row['creator_name'] = $this->queryValue('.//div[@class="fl information member"]/a');
         // Location
         // <span class="location"><a href="/projects?filter_city=London&amp;cGB&amp;filter_text=">London, United Kingdom</a>
         $row['location_url'] = $this->queryAttribute('.//span[@class="location"]/a', "href");
