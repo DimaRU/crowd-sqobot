@@ -103,6 +103,9 @@ if (Core::cli() and isset($argv)) {
   array_shift($argv);   // script.php
   reset($argv) === '--' and array_shift($argv);
   Core::$cl = S::parseCL($argv, true);
+} elseif (isset ($_REQUEST['cmd'])) {
+  Core::$cl = S::parseCL(explode(',', $_REQUEST['cmd']), true);
+  echo "<pre>";
 }
 
 $chdir = opt('chdir', USER) and chdir($chdir);

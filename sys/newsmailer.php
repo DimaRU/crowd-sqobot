@@ -54,6 +54,12 @@ class NewsMailer {
         $params = compact($digest, $address, $name);
         $this->addHeader($params);
         $this->addFooter($params);
+        if (opt('nomail')) {
+            echo "</pre>";
+            echo $this->body;
+            echo "<pre>";
+            return;
+        }
         $message = \Swift_Message::newInstance();
         $message->setBody($this->body, 'text/html');
 

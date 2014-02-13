@@ -5,8 +5,8 @@
  */
 class TaskMail extends Task {
 
-  protected function mailFields($page_table) {
-    $mailFields = explode(" ", cfg("mailFields"));
+  protected function joinlFields($page_table, $id) {
+    $mailFields = explode(" ", cfg($id));
     array_walk($mailFields, function(&$s) use ($page_table) {
                $s = $page_table. "." . $s;
                });
@@ -24,9 +24,8 @@ class TaskMail extends Task {
     
     foreach ($dbNames as $site_id => $dbNameList) {
         extract($dbNameList);
-        $mailFields = $this->mailFields($page_table);
         // Select subsribed sities and categories for site
-        $sql = "SELECT ".$mailFields. "\n"
+        $sql = "SELECT " . $this->joinlFields($page_table, "mailFields") . "\n"
         . "FROM ($subs_table INNER JOIN $page_table ON ($subs_table.category = $page_table.category) "
         . "AND ($subs_table.site_id = $page_table.site_id)) INNER JOIN $newmail_table ON $page_table.project_id = $newmail_table.project_id\n"
         . "WHERE $page_table.site_id = \"$site_id\" AND "
@@ -34,13 +33,16 @@ class TaskMail extends Task {
                 . "$page_table.state IS NULL AND "
                 . "$subs_table.ID = $id AND "
                 . "$newmail_table.digest = \"$digest\"\n"
-        . "ORDER BY $mailFields";
+        . "ORDER BY " . $this->joinlFields($page_table, "sortOrder");
         $stmt = exec($sql);
         //echo $stmt->rowCount(),PHP_EOL; 
         $rows = $stmt->fetchAll();
         $stmt->closeCursor();
 
         if (count($rows)) {
+            foreach ($rows as $i => $row) {
+                $row->json = json_decode($row->project_json, true);
+            }
             $mailer->addBodyContent(array('rows' => $rows), $site_id);
         }
     }
@@ -51,14 +53,16 @@ class TaskMail extends Task {
   // Email new projects filered by category  
   function do_news(array $args = null) {
     if ($args === null) {
-      return print 'mail news hourly|daily|weekly [--no-mark]}';
+      return print 'mail news hourly|daily|weekly [--nomark] [--nomail]}';
     }
     $digest = opt(0);
     if (!in_array($digest, array('hourly', 'daily', 'weekly'))) {
             return print 'Invalid argument. Only hourly|daily|weekly allowed.'. PHP_EOL;
     }
     
-    echo "Emailing $digest new projects", PHP_EOL;
+    if (!opt('nomail')) {
+        echo "Emailing $digest new projects", PHP_EOL;
+    }
 
     $dbNames = cfgDbOptions('dbNames');
     $dbComNames = cfgDbOptions('dbComNames');
@@ -87,7 +91,7 @@ class TaskMail extends Task {
 
     foreach ($dbNames as $site_id => $dbNameList) {
         extract($dbNameList);
-        if (empty($args['no-mark'])) {
+        if (!opt('nomark')) {
             // Mark mailed
             $sql = "UPDATE $page_table INNER JOIN $newmail_table ON $page_table.project_id = $newmail_table.project_id SET $page_table.$digest = 1\n"
                 . "WHERE $newmail_table.digest = \"$digest\" AND $newmail_table.site_id = \"$site_id\"";
