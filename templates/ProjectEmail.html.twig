@@ -23,12 +23,24 @@ Crowd scan robot
     {% set category = '' %}
     {% for row in rows %}
       {% if category != row.category %}
-        <h3>{{ row.category }}</h3>
+    <h3><span class="category">
+      <a href="https://www.kickstarter.com/discover/categories/{{row.category}}">{{row.category}}</a>
+    </span></h3>
       {% set category = row.category %}  
       {% endif %}
-      <div>
-        <a href="{{row.short_url}}" class="project line" title="{{row.blurb}}">{{row.name}}</a>
+<div class="sub-header">
+  <div class="container clearfix">
+    <img alt="Project picture" class="fl avatar" src="{{row.avatar}}" />
+    <div class='fl header-wrapper'>
+      <div class="fl headline notranslate">
+        <a href="{{row.short_url}}" class="bold x-large notranslate">{{row.name}}</a>
+        <p class="notranslate">{{row.blurb}}</p>
       </div>
+      <div class="fl project-information">
+    <span class="location">
+      <a href="http://www.indiegogo.com{{row.location_url}}">{{row.location}}</a>
+    </span>
+</div>
     {% endfor %}
 {% endblock %}
 
@@ -37,11 +49,23 @@ Crowd scan robot
     {% set category = '' %}
     {% for row in rows %}
       {% if category != row.category %}
-        <h3>{{ row.category }}</h3>
+    <h3><span class="category">
+      <a href="http://www.indiegogo.com/projects?filter_category={{row.category}}">{{row.category}}</a>
+    </span></h3>
       {% set category = row.category %}  
       {% endif %}
-      <div>
-        <a href="{{row.short_url}}" class="project line" title="{{row.blurb}}">{{row.name}}</a>
+<div class="sub-header">
+  <div class="container clearfix">
+    <img alt="Project picture" class="fl avatar" src="{{row.avatar}}" />
+    <div class='fl header-wrapper'>
+      <div class="fl headline notranslate">
+        <a href="{{row.short_url}}" class="bold x-large notranslate">{{row.name}}</a>
+        <p class="notranslate">{{row.blurb}}</p>
       </div>
+      <div class="fl project-information">
+    <span class="location">
+      <a href="http://www.indiegogo.com{{row.location_url}}">{{row.location}}</a>
+    </span>
+</div>
     {% endfor %}
 {% endblock %}
