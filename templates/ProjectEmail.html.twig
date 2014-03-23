@@ -19,6 +19,7 @@ Crowd scan robot
 {% endblock %}
 
 {% block kickstarter %}
+<div>
 <h2>Kickstarter</h2>
     {% set category = '' %}
     {% for row in rows %}
@@ -29,43 +30,43 @@ Crowd scan robot
       {% set category = row.category %}  
       {% endif %}
 <div class="sub-header">
-  <div class="container clearfix">
     <img alt="Project picture" class="fl avatar" src="{{row.avatar}}" />
-    <div class='fl header-wrapper'>
       <div class="fl headline notranslate">
         <a href="{{row.short_url}}" class="bold x-large notranslate">{{row.name}}</a>
         <p class="notranslate">{{row.blurb}}</p>
       </div>
       <div class="fl project-information">
-    <span class="location">
       <a href="http://www.indiegogo.com{{row.location_url}}">{{row.location}}</a>
-    </span>
+      </div>
 </div>
     {% endfor %}
+</div>
 {% endblock %}
 
 {% block indiegogo %}
+<br>
+<div>
 <h2>Indiegogo</h2>
     {% set category = '' %}
     {% for row in rows %}
       {% if category != row.category %}
+    <div>
     <h3><span class="category">
       <a href="http://www.indiegogo.com/projects?filter_category={{row.category}}">{{row.category}}</a>
     </span></h3>
+    </div>
       {% set category = row.category %}  
       {% endif %}
 <div class="sub-header">
-  <div class="container clearfix">
     <img alt="Project picture" class="fl avatar" src="{{row.avatar}}" />
-    <div class='fl header-wrapper'>
       <div class="fl headline notranslate">
         <a href="{{row.short_url}}" class="bold x-large notranslate">{{row.name}}</a>
         <p class="notranslate">{{row.blurb}}</p>
       </div>
       <div class="fl project-information">
-    <span class="location">
       <a href="http://www.indiegogo.com{{row.location_url}}">{{row.location}}</a>
-    </span>
+      </div>
 </div>
     {% endfor %}
+</div>
 {% endblock %}

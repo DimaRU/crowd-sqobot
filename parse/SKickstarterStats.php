@@ -49,6 +49,9 @@ class SKickstarterStats extends Sqissor {
         $row['comments_count'] = $pdata['comments_count'];
         $row['updates_count'] = $pdata['updates_count'];
 
+        if (!$row['pledged'] && !$row['backers_count'] && !$row['comments_count'] && !$row['updates_count'] = 0)
+        {  return; }
+
         // Compare with old
         $sql = "SELECT `load_time`, `pledged`, `backers_count`, `comments_count`, `updates_count`\n"
             . "FROM `st_project_stats`\n"
@@ -60,10 +63,11 @@ class SKickstarterStats extends Sqissor {
         $stmt->closeCursor();
 
         if (count($lastrow) != 0 && $this->compareRows($row, $lastrow)) {
-            // Update
-            Row::setTableName($this->getopt('stats_table'));
+            // Update date ?
+            /* Row::setTableName($this->getopt('stats_table'));
             Row::updateIgnoreWith(array('load_time' => $row['load_time']), 
                     array('project_id' => $project_id, 'load_time' => $lastrow[0]->load_time));
+             */
         } else {
             // Add new record
             Row::setTableName($this->getopt('stats_table'));
