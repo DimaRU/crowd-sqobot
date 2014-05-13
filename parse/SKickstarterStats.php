@@ -7,7 +7,6 @@
  */
 class SKickstarterStats extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
-    static $accept = "text/html";
     
     protected function compareRows(array $row1, array $row2) {
         return ( $row1['pledged'] == $row2[0]->pledged &&
@@ -16,7 +15,9 @@ class SKickstarterStats extends Sqissor {
              $row1['updates_count'] == $row2[0]->updates_count);
     }
     
-    protected function doSlice($data) {
+    protected function doSlice($url) {
+        $data = $this->loadURL("https://" . $url, array('accept' => "text/html"));
+        
         $project_id = strstr($this->url, $this->domain());
         $row = array('site_id' => 'kickstarter', 
                      'load_time' => date(DATE_ATOM),

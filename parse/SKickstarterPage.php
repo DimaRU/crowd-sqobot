@@ -9,7 +9,9 @@ class SKickstarterPage extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
     static $accept = "text/html";
     
-    protected function doSlice($data) {
+    protected function doSlice($url) {
+        $data = $this->loadURL("https://" . $url, array('accept' => "text/html", 'referer' => $this->getopt('ref_page')));
+
         $row = array('site_id' => 'kickstarter', 
                      'load_time' => date(DATE_ATOM),
                      'project_id' => strstr($this->url, $this->domain()),
@@ -55,10 +57,10 @@ class SKickstarterPage extends Sqissor {
         echo strip_tags($this->queryValue('.//div[@id="risks"]'));
          */
 
-        // <meta meta content="-72.198562622071" property="kickstarter:location:longitude">
+        // <meta content="-72.198562622071" property="kickstarter:location:longitude">
         // <meta content="41.333982467652" property="kickstarter:location:latitude">
-        $row['latitude'] = $this->queryAttribute('.//meta[@property="kickstarter:location:latitude"]', "content");
-        $row['longitude'] = $this->queryAttribute('.//meta[@property="kickstarter:location:longitude"]', "content");
+        //$row['latitude'] = $this->queryAttribute('.//meta[@property="kickstarter:location:latitude"]', "content");
+        //$row['longitude'] = $this->queryAttribute('.//meta[@property="kickstarter:location:longitude"]', "content");
 
         $row['project_id'] = strstr($pdata['urls']['web']['project'], $this->domain());
         $row['name'] = $pdata['name'];

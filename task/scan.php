@@ -12,11 +12,6 @@ class TaskScan extends Task {
     return $opt[$site_id]['start_page'];
   }
 
-  public function getSiteProto($site_id) {
-    $opt = cfgOptions("scan");
-    return $opt[$site_id]['proto'];
-  }
-  
   private function scan_index($site_id, $url, $options, $maxpage = null) {
     echo "Scanning index for $site_id", PHP_EOL;
     extract($options);
@@ -39,7 +34,6 @@ class TaskScan extends Task {
 
   private function scan_pages($site_id, $options) {
     extract($options);
-    $proto = $this->getSiteProto($site_id);
     // Fetch all new projects
     $sql =  "SELECT `$index_table`.project_id, `$index_table`.ref_page ".
             "FROM `$index_table` ".
@@ -55,7 +49,7 @@ class TaskScan extends Task {
     foreach($projects as $project) {
         $options['ref_page'] = $project->ref_page;
         try {
-            Sqissor::process($proto . $project->project_id, $site_id.".Page", $options);
+            Sqissor::process($project->project_id, $site_id.".Page", $options);
         } catch (\Exception $e) {
             echo 'Exception: ', exLine($e), PHP_EOL;
         }
@@ -82,11 +76,10 @@ class TaskScan extends Task {
   //
   private function scan_stats($site_id, $options) {
     extract($options);  
-    $proto = $this->getSiteProto($site_id);
     // 1. Select all records for site_id
     // scan stats
     // Fetch all new projects
-    $sql = "SELECT `project_id` ".
+    $sql = "SELECT `project_id`, `real_url` ".
            "FROM `$page_table` ".
            "WHERE `mailformed` = 0 and `site_id` = \"$site_id\" and `deadline` > now() and (`state` = \"live\" OR `state` Is Null)";
     
@@ -100,7 +93,8 @@ class TaskScan extends Task {
     
     foreach($projects as $project) {
         try {
-            Sqissor::process($proto . $project->project_id, $site_id.".Stats", $options) and $newrows++;
+            $options['real_url'] = $project->real_url;
+            Sqissor::process($project->project_id, $site_id.".Stats", $options) and $newrows++;
         } catch (\Exception $e) {
             echo 'Exception: ', exLine($e), PHP_EOL;
         }

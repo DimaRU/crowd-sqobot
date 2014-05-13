@@ -7,12 +7,15 @@
  */
 class SIndiegogoPage extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
-    static $accept = "text/html";
     
-    protected function doSlice($data) {
+    protected function doSlice($url) {
+        $data = $this->loadURL("https://" . $url, array('accept' => "text/html", 'referer' => $this->getopt('ref_page')));
+        $newurl = str_replace("/x/505059", "", Download::httpMovedURL());
+
         $row = array( 'site_id' => 'indiegogo',
                       'load_time' => date(DATE_ATOM),
                       'project_id' => strstr($this->url, $this->domain()),
+                      'real_url' => $newurl,
                       'ref_page' => $this->getopt('ref_page'),
                       'mailformed' => 0
         );
@@ -22,30 +25,49 @@ class SIndiegogoPage extends Sqissor {
             Row::createOrReplaceWith($row);
             return;
         }
-
+        $json = $this->loadURL($newurl, array('accept' => "application/json"));
+        if (Download::httpReturnCode() == 404) {
+            $row['state'] = "404";
+            Row::createOrReplaceWith($row);
+            return;
+        }
         $this->initDom($data);
-        $json = download($this->url, array('referer' => $row['ref_page'], 'accept' => "application/json"));
         try {
-            $this->parsePage($row, $json);
+            $row += $this->parsePage($json);
         } catch (ESqissor $e) {
             $row['mailformed'] = 1;
             Row::createOrReplaceWith($row);
             throw $e;
         }
+
+        $data1 = $this->loadURL($newurl . "/show_tab/home", array('accept' => "text/html", 'referer' => $newurl));
+        if (Download::httpReturnCode() == 404) {
+            $row['state'] = "404";
+            Row::createOrReplaceWith($row);
+            return;
+        }
+        $this->initDom($data1);
+        try {
+            $row += $this->parsePageHomeTab();
+        } catch (ESqissor $e) {
+            $row['mailformed'] = 1;
+            Row::createOrReplaceWith($row);
+            throw $e;
+        }
+        
         Row::createOrReplaceWith($row);
     }
 
-    private function parsePage(&$row, &$json) {
-    /*
-        <meta property="og:title" content="Flauntin - get discount when promoting your favorite stores!"/>
-        <meta property="og:description" content="Our goal is to vitalize small, local and independent shops around the world!"/>
-        <meta property="og:url" content="http://www.indiegogo.com/projects/566291/fblk"/>
-        <p class="money-raised goal">Raised of <span class="currency"><span>$5,000</span></span> Goal</p>
-        <p class="amount bold fl title">Flexible Funding</p>
-        <p class="funding-info">This campaign will receive all funds raised ..... Funding duration: November 04, 2013 - December 27, 2013 (11:59pm PT).</p>
-        <div class="user-content">
-     */
+    private function parsePageHomeTab() {
+        // <a class="i-icon-link js-clip" data-clipboard-text="http://igg.me/at/gosnellmovie/x">
+        $row['short_url'] = str_replace("/x", "", $this->queryAttribute('.//a[@class="i-icon-link js-clip"]', "data-clipboard-text"));
+        // <a href="/individuals/6877579" class="i-name">Ann and Phelim Media</a>
+        $row['creator_name'] = $this->queryValue('.//a[@class="i-name"]');
+        $row['full_desc'] = $this->htmlToText($this->queryValue('.//div[@class="i-description"]'));
+        return $row;
+    }
 
+    private function parsePage($json) {
         $pdata = json_decode($json, true);
         $row['name'] = $pdata['title'];
         $row['blurb'] = $pdata['tagline'];
@@ -58,42 +80,20 @@ class SIndiegogoPage extends Sqissor {
         $row['category'] = $pdata['category'];
         $row['project_json'] = $json;
 
-        /*
-        $row['name'] = $this->queryAttribute('.//meta[@property="og:title"]', "content");
-        if (!$row['name'] or strpos($row['name'], 'Untitled Draft Project') !== false) {
-            warn($this->url . ": bad project name: {$row['name']}");
-            $row['mailformed'] = 1;
-            return;
-        }
-        $row['blurb'] = $this->queryAttribute('.//meta[@property="og:description"]', "content");
-        // <span class="category"><a href="/projects?filter_category=Community">Community</a>
-        $row['category'] = $this->queryValue('.//span[@class="category"]/a');
-        $g = $this->queryValue('.//p[@class="money-raised goal"]/span[@class="currency"]/span');
-        $s = strpbrk($g, "0123456789");
-        $row['currency_symbol'] = str_replace($s, "", $g);
-        $row['goal'] = str_replace(",", "", $s);
+        // <div class="i-img" data-src="https://images.indiegogo.com/projects/731457/pictures/new_baseball/20140327190616-IndieGogo_Image.jpg?1395972381">
+        // <meta property="og:image" content="https://images.indiegogo.com/projects/731457/pictures/primary/20140327190616-IndieGogo_Image.jpg?1395972381"/>
+        $row['avatar'] = strstr($this->queryAttribute('.//meta[@property="og:image"]', "content"), "?", true);
 
-        //<span class="currency currency-xlarge"><span>£26,316</span><em>GBP</em></span></span>
-        $row['currency'] = $this->queryValue('.//span[@class="currency currency-xlarge"]/em');
-
-        // ...duration: November 04, 2013 - December 27, 2013 (11:59pm PT).
-        $s = $this->queryValue('.//p[@class="funding-info"]');
-        $s = substr($s, strpos($s, 'duration: ')+10);
-        $dates = explode("-", str_replace(" (11:59pm PT).", "", $s));
-        $row['launched_at'] = date(DATE_ATOM, strtotime($dates[0]));
-        $row['deadline'] = date(DATE_ATOM, strtotime($dates[1]));
-        $row['location'] = $this->queryValue('.//span[@class="location"]/a');
-         */
-        $row['campaign_type'] = $this->queryValue('.//p[@class="amount bold fl title"]');
-        $row['short_url'] = $this->queryAttribute('.//input[@name="sharing_url"]', "value");
-        $row['avatar'] = str_replace("thumbnail", "baseball", strstr($this->queryAttribute('.//img[@class="fl avatar"]', "src"), "?", true));
-        // <div class="fl information member"><a href="/individuals/4630424" class="name bold">Sanderson Jones</a>
-        $row['creator_name'] = $this->queryValue('.//div[@class="fl information member"]/a');
-        // Location
-        // <span class="location"><a href="/projects?filter_city=London&amp;cGB&amp;filter_text=">London, United Kingdom</a>
-        $row['location_url'] = $this->queryAttribute('.//span[@class="location"]/a', "href");
-        $parts = explode("&", $row['location_url']);
-        $row['country'] = substr($parts[1], 20);    // skip 'filter_country=CTRY_'
-        $row['full_desc'] = $this->htmlToText($this->queryValue('.//div[@class="user-content"]'));
+        // 
+        // <div class="i-icon-project-note">
+        //  <span class="i-icon i-glyph-icon-22-fixedfunding"></span>
+        //  <span>Fixed Funding</span><span class="i-icon i-icon-info-bubble"></span>
+        // </div>
+        $row['campaign_type'] = trim($this->queryValue('.//div[@class="i-icon-project-note"]'));
+        // <a href="/explore?filter_city=Los+Angeles&amp;filter_country=CTRY_US" class="i-byline-location-link">Los Angeles, California, United States</a>
+        $row['location_url'] = $this->queryAttribute('.//a[@class="i-byline-location-link"]', "href");
+        parse_str($row['location_url'], $output);
+        $row['country'] = substr($output['filter_country'], 5);    // skip 'CTRY_'
+        return $row;
     }
 }

@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 4.0.8
+-- version 4.2.0
 -- http://www.phpmyadmin.net
 --
 -- Хост: localhost
--- Время создания: Фев 05 2014 г., 19:12
--- Версия сервера: 5.1.71
--- Версия PHP: 5.3.3
+-- Время создания: Май 13 2014 г., 21:50
+-- Версия сервера: 5.5.37
+-- Версия PHP: 5.4.27
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
@@ -17,7 +17,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8 */;
 
 --
--- База данных: `crowd-sqobot`
+-- База данных: `crowd-crawler`
 --
 
 -- --------------------------------------------------------
@@ -29,10 +29,8 @@ SET time_zone = "+00:00";
 CREATE TABLE IF NOT EXISTS `st_newmail_table` (
   `site_id` varchar(20) NOT NULL,
   `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
-  `digest` varchar(10) NOT NULL,
-  UNIQUE KEY `project_id` (`project_id`,`digest`),
-  KEY `site_id` (`site_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  `digest` varchar(10) NOT NULL
+) ENGINE=MEMORY DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -44,6 +42,7 @@ CREATE TABLE IF NOT EXISTS `st_project_page` (
   `load_time` datetime NOT NULL COMMENT 'Время загрузки страницы с данными',
   `site_id` varchar(20) NOT NULL,
   `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
+  `real_url` varchar(255) NOT NULL COMMENT 'Реальный URL проекта Indiegogo',
   `name` varchar(100) NOT NULL,
   `state` varchar(10) DEFAULT NULL COMMENT 'Состояние проекта',
   `blurb` varchar(255) NOT NULL,
@@ -69,18 +68,7 @@ CREATE TABLE IF NOT EXISTS `st_project_page` (
   `daily` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Ежедневная рассылка',
   `weekly` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Еженедельная рассылка',
   `ref_page` varchar(255) DEFAULT NULL,
-  `mailformed` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Флаг недооформленного проекта',
-  PRIMARY KEY (`project_id`),
-  KEY `country` (`country`),
-  KEY `deadline` (`deadline`),
-  KEY `launched_at` (`launched_at`),
-  KEY `location` (`location`),
-  KEY `category` (`category`),
-  KEY `site_id` (`site_id`),
-  KEY `hourly` (`hourly`),
-  KEY `daily` (`daily`),
-  KEY `weekly` (`weekly`),
-  KEY `malformed` (`mailformed`)
+  `mailformed` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Флаг недооформленного проекта'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -96,11 +84,7 @@ CREATE TABLE IF NOT EXISTS `st_project_stats` (
   `pledged` bigint(20) NOT NULL,
   `backers_count` int(11) NOT NULL,
   `comments_count` int(11) NOT NULL,
-  `updates_count` int(11) NOT NULL,
-  `project_json` text,
-  PRIMARY KEY (`load_time`,`project_id`),
-  KEY `site_id` (`site_id`),
-  KEY `project_id` (`project_id`)
+  `updates_count` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -113,11 +97,8 @@ CREATE TABLE IF NOT EXISTS `st_site_index` (
   `load_time` datetime NOT NULL COMMENT 'Время загрузки страницы с данными',
   `site_id` varchar(20) NOT NULL,
   `project_id` varchar(255) NOT NULL COMMENT 'Ссылка на проект',
-  `ref_page` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`project_id`),
-  UNIQUE KEY `project_id` (`project_id`),
-  KEY `load_time` (`load_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Project index';
+  `ref_page` varchar(255) DEFAULT NULL
+) ENGINE=MEMORY DEFAULT CHARSET=utf8 COMMENT='Project index';
 
 -- --------------------------------------------------------
 
@@ -128,8 +109,7 @@ CREATE TABLE IF NOT EXISTS `st_site_index` (
 CREATE TABLE IF NOT EXISTS `st_users_category` (
   `ID` bigint(20) NOT NULL COMMENT 'ID пользователя',
   `site_id` varchar(20) NOT NULL,
-  `category` varchar(100) NOT NULL COMMENT 'Название категории',
-  UNIQUE KEY `id_cat` (`ID`,`category`,`site_id`)
+  `category` varchar(100) NOT NULL COMMENT 'Название категории'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -139,7 +119,7 @@ CREATE TABLE IF NOT EXISTS `st_users_category` (
 --
 
 CREATE TABLE IF NOT EXISTS `wp_users` (
-  `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+`ID` bigint(20) unsigned NOT NULL,
   `user_login` varchar(60) NOT NULL DEFAULT '',
   `user_pass` varchar(64) NOT NULL DEFAULT '',
   `user_nicename` varchar(50) NOT NULL DEFAULT '',
@@ -149,12 +129,58 @@ CREATE TABLE IF NOT EXISTS `wp_users` (
   `user_activation_key` varchar(60) NOT NULL DEFAULT '',
   `user_status` int(11) NOT NULL DEFAULT '0',
   `display_name` varchar(250) NOT NULL DEFAULT '',
-  `digest` varchar(10) NOT NULL,
-  PRIMARY KEY (`ID`),
-  KEY `user_login_key` (`user_login`),
-  KEY `user_nicename` (`user_nicename`)
+  `digest` varchar(10) NOT NULL
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=3 ;
 
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `st_newmail_table`
+--
+ALTER TABLE `st_newmail_table`
+ ADD UNIQUE KEY `project_id` (`project_id`,`digest`), ADD KEY `site_id` (`site_id`);
+
+--
+-- Indexes for table `st_project_page`
+--
+ALTER TABLE `st_project_page`
+ ADD PRIMARY KEY (`project_id`), ADD KEY `country` (`country`), ADD KEY `deadline` (`deadline`), ADD KEY `launched_at` (`launched_at`), ADD KEY `location` (`location`), ADD KEY `category` (`category`), ADD KEY `site_id` (`site_id`), ADD KEY `hourly` (`hourly`), ADD KEY `daily` (`daily`), ADD KEY `weekly` (`weekly`), ADD KEY `load_time` (`load_time`), ADD KEY `real_url` (`real_url`), ADD KEY `state` (`state`);
+
+--
+-- Indexes for table `st_project_stats`
+--
+ALTER TABLE `st_project_stats`
+ ADD PRIMARY KEY (`load_time`,`project_id`), ADD KEY `site_id` (`site_id`), ADD KEY `load_time` (`load_time`);
+
+--
+-- Indexes for table `st_site_index`
+--
+ALTER TABLE `st_site_index`
+ ADD PRIMARY KEY (`project_id`), ADD UNIQUE KEY `project_id` (`project_id`), ADD KEY `load_time` (`load_time`);
+
+--
+-- Indexes for table `st_users_category`
+--
+ALTER TABLE `st_users_category`
+ ADD UNIQUE KEY `id_cat` (`ID`,`category`,`site_id`);
+
+--
+-- Indexes for table `wp_users`
+--
+ALTER TABLE `wp_users`
+ ADD PRIMARY KEY (`ID`), ADD KEY `user_login_key` (`user_login`), ADD KEY `user_nicename` (`user_nicename`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `wp_users`
+--
+ALTER TABLE `wp_users`
+MODIFY `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

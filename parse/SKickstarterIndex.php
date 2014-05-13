@@ -7,9 +7,10 @@
  */
 class SKickstarterIndex extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
-    static $accept = "application/json";
     
-    protected function doSlice($data) {
+    protected function doSlice($url) {
+        $data = $this->loadURL($url, array('accept' => "application/json"));
+
         if (Download::httpReturnCode() == 404)
             return;
         

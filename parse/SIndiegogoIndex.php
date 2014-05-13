@@ -7,9 +7,11 @@
  */
 class SIndiegogoIndex extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
-    static $accept = "text/html";
+    const PROJ_MARK = '<div class="i-img" data-src="https://images.indiegogo.com/projects/';
     
-    protected function doSlice($data) {
+    protected function doSlice($url) {
+        $data = $this->loadURL($url, array('accept' => "text/html"));
+
         if (Download::httpReturnCode() == 404)
             return;
         
@@ -18,28 +20,15 @@ class SIndiegogoIndex extends Sqissor {
         'load_time' => date(DATE_ATOM),
         'ref_page' => $this->url);
         Row::setTableName($this->getopt('index_table'));
-        
-        $this->initDom($data);
-        
-        // <div class="project-details"> <a href="/projects/start-anew-world/pinw" class="name bold">Start Anew World</a>
-        $projects_index = $this->querySafe('.//div[@class="project-details"]/a');
 
-        foreach ($projects_index as $project) {
-            $s = $project->getAttribute('href');
-            $row['project_id'] = $this->domain() . substr($s, 0, strrpos($s,"/"));
+        //     <div class="i-img" data-src="https://images.indiegogo.com/projects/766558/pictures/new_baseball/20140425161938-profile-pic.jpg?1398467986">
+        $pos1 = 0;
+        while($pos1 = strpos($data, self::PROJ_MARK, $pos1)) {
+            $pos1 += strlen(self::PROJ_MARK);
+            $pos2 = strpos($data, "/", $pos1);
+            $row['project_id'] = "www.indiegogo.com/projects/" . substr($data, $pos1, $pos2 - $pos1);
             Row::createOrReplaceWith($row);
         }
-        // <div class="browse_pagination" locale="en">
-        // <a href="/projects?filter_country=CTRY_RU&amp;filter_quick=new&amp;pg_num=183" rel="next" class="next_page">Next</a>
-        $nodes = $this->finder->query('.//div[@class="browse_pagination"]/a[@class="next_page"]');
-
-        if ($nodes->length != 0) {
-            // http://www.indiegogo.com/projects?filter_country=CTRY_xx&filter_quick=new&pg_num=98
-            $parts = explode("&", $nodes->item(0)->getAttribute("href"));
-            $next_url = "http://".$this->domain() . strstr($parts[0], "?", true). "?" . $parts[1] . "&" . $parts[2];
-            return $next_url;
-        }
+        return false;
     }
 }
-
-?>
