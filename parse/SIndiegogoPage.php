@@ -10,11 +10,14 @@ class SIndiegogoPage extends Sqissor {
     
     protected function doSlice($url) {
         $data = $this->loadURL("https://" . $url, array('accept' => "text/html", 'referer' => $this->getopt('ref_page')));
-        $newurl = str_replace("/x/505059", "", Download::httpMovedURL());
+        if (($newurl = Download::httpMovedURL()) === false) {
+            $newurl = "https://" . $url;
+        }
+        $newurl = str_replace("/x/505059", "", $newurl);
 
         $row = array( 'site_id' => 'indiegogo',
                       'load_time' => date(DATE_ATOM),
-                      'project_id' => strstr($this->url, $this->domain()),
+                      'project_id' => strstr($this->url, $this->domain()),  // Cut https://
                       'real_url' => $newurl,
                       'ref_page' => $this->getopt('ref_page'),
                       'mailformed' => 0

@@ -5,6 +5,7 @@ class Download {
   static $curl;                         // Curl handle. Do not close!!!
   static $requests = 0;                 // Total download requests, for stats
   static $timeouts = 0;                 // Timeouts, for stats
+  static $starttransfer_times = 0;      // Total starttransfer_time
 
   public $contextOptions = array();
   public $url;
@@ -238,6 +239,9 @@ class Download {
     }
 
     // TODO: stats
+    if (isset($meta['starttransfer_time'])) {
+        Download::$starttransfer_times += $meta['starttransfer_time']; 
+    }
     $stats = array_intersect_key(
         $meta, 
         array_flip(array(

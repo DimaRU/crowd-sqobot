@@ -56,7 +56,7 @@ abstract class Task {
       $duration = microtime(true) - $started;
       log("End {$this->name} $task ". opt(0). 
               sprintf('. Execution time %1.2f sec. ', $duration). 
-              "Downloads/timeouts: ".Download::$requests."/".Download::$timeouts);
+              "Downloads/timeouts/wait: ".Download::$requests."/".Download::$timeouts."/".Download::$starttransfer_times);
     } catch (\Exception $e) {
       ETaskError::re($e, "Exception while running task [$id].");
     }

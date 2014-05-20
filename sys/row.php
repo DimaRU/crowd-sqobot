@@ -75,9 +75,12 @@ class Row {
 
   // See update(), updateWith(), updateIgnore() and others.
   protected function doUpdate($method, $sqlVerb) {
-    $sql = "$sqlVerb `".$this->getTableName().'` SET '.join(', ', S($this->row, '#"`?` = \"?\""')).
-           ' WHERE '.join('AND ', S($this->where, '#"`?` = \"?\""'));
-    exec($sql);
+    list($fields, $bind) = S::divide($this->row);
+    list($fieldsw, $bindw) = S::divide($this->where);
+
+    $sql = "$sqlVerb `".$this->getTableName().'` SET '.join(', ', S($fields, '"`?` = ??"')).
+           ' WHERE '.join('AND ', S($fieldsw, '"`?` = ??"'));
+    exec($sql, array_merge($bind, $bindw));
     return $this;
   }
 
