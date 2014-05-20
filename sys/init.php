@@ -14,7 +14,6 @@ set_time_limit(24 * 3600);
 
 require_once ROOT.'sys/core.php';
 require_once ROOT.'lib/squall.php';
-require_once ROOT.'swiftmailer/lib/swift_required.php';
 
 \Squall\initEx(NS);
 
@@ -29,8 +28,8 @@ spl_autoload_register(function ($class) {
     $lower = strtolower($short);
 
     $files = array(
-      USER."user/$short.php",
-      USER."user/$lower.php",
+      USER."parse/$short.php",
+      USER."parse/$lower.php",
       ROOT."sys/$lower.php",
     );
 
@@ -43,8 +42,8 @@ spl_autoload_register(function ($class) {
     $files = array(
       ROOT."lib/$class.php",
       ROOT."lib/$lower.php",
-      USER."user/$class.php",
-      USER."user/$lower.php",
+      USER."parse/$class.php",
+      USER."parse/$lower.php",
     );
   }
 
@@ -64,8 +63,8 @@ spl_autoload_register(function ($class) {
     }
   }
 
-  warn("Cannot autoload class [$class] from either of these paths:".
-       join("\n  ", S::prepend($files, '')));
+  log("Cannot autoload class [$class] from either of these paths:".
+       join("\n  ", S::prepend($files, '')), 'debug');
 });
 
 register_shutdown_function(function () {
@@ -104,6 +103,9 @@ if (Core::cli() and isset($argv)) {
   array_shift($argv);   // script.php
   reset($argv) === '--' and array_shift($argv);
   Core::$cl = S::parseCL($argv, true);
+} elseif (isset ($_REQUEST['cmd'])) {
+  Core::$cl = S::parseCL(explode(',', $_REQUEST['cmd']), true);
+  echo "<pre>";
 }
 
 $chdir = opt('chdir', USER) and chdir($chdir);
@@ -117,10 +119,6 @@ foreach ((array) opt('config', 'main') as $file) {
 
 foreach ((array) opt('cfg') as $config => $value) {
   Core::$config[$config] = $value;
-}
-
-if (is_file($user = USER.'user/init.php')) {
-  include $user;
 }
 
 if ($tz = cfg('timeZone') and !date_default_timezone_set($tz)) {

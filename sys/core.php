@@ -181,6 +181,27 @@ function cfgGroup($group) {
   });
 }
 
+function cfgOptions($group) {
+    $opts = cfgGroup($group);
+    $optnames = explode(' ', trim($opts['site_id']));
+    unset($opts['site_id']);
+    foreach ($opts as $key => $opt) {
+        $optlist[$key] = array_combine($optnames, explode(' ', trim($opt)));
+    }
+    return $optlist;
+}
+
+function cfgDbOptions($group) {
+    $optlist = cfgOptions($group);
+
+    foreach ($optlist as $key => $opt) {
+        foreach ($opt as $optkey =>$value) {
+            $optlist[$key][$optkey] = cfg('dbPrefix').$value;
+        }
+    }
+    return $optlist;
+}
+
 function remoteDelay($started = null, $delay = null) {
   isset($delay) or $delay = cfg('remoteDelay');
   $delay += mt_rand(0, $delay / 10);
@@ -228,11 +249,7 @@ function fire($event, $args = array()) {
 
 function log($msg, $level = 'info') {
   if (strpos(cfg('log', ' $ '), " $level ") !== false and $log = logFile()) {
-    $client = Core::$cl ? 'cli' : S::pickFlat($_SERVER, 'REMOTE_ADDR');
-    //$user = Web::user() and $client .= " $user";
-
-    $msg = sprintf('$ %s [%s] [%s] %s', strtoupper($level), date('H:i:s d-m-Y'),
-                   $client, $msg);
+    $msg = sprintf('$ %s [%s] %s', strtoupper($level), date('H:i:s d-m-Y'), $msg);
 
     S::mkdirOf($log);
     touch($log);

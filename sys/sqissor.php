@@ -6,7 +6,6 @@ abstract class Sqissor {
   public $url;
   public $options;
   static $domain_name;
-  static $accept = null;       // Accept: header
   
   // DOMDocument processing
   public $finder;
@@ -68,9 +67,9 @@ abstract class Sqissor {
   function sliceURL($url) {
     $this->url = $url;
     log("Process {$this->name} $url", 'debug');
-    $referer = dirname($url);
-    strrchr($referer, '/') === false and $referer = null;
-    return $this->slice(download($url, array('referer'  => $referer, 'accept' => static::$accept)));
+    //$referer = dirname($url);
+    //strrchr($referer, '/') === false and $referer = null;
+    return $this->doSlice($url, $this->options);
   }
 
   //
@@ -80,13 +79,18 @@ abstract class Sqissor {
   //
   //* $data str   - typically is a fetched URL content unless ->sliceURL() is
   //  overriden in a child class.
-  //* $transaction  null read value from ->$transaction
-  //                bool whether to wrap processing in a database transaction or not
   //
   //? slice('<!DOCTYPE html><html>...</html>')
   //
   function slice($data) {
     return $this->doSlice($data, $this->options);
+  }
+
+  //
+  // Real download resource
+  //
+  function loadURL($url, $headers = array() ) {
+    return download($url, $headers);
   }
 
   //

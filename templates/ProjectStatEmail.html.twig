@@ -1,0 +1,26 @@
+{% extends 'email.html.twig' %}
+
+{% block from -%}
+robot@bdm.org.ru
+{%- endblock %}
+
+{% block fromname -%}
+Crowd scan robot
+{%- endblock %}
+
+{% block subject -%}
+{{ digest|title }} stats by site and category.
+{%- endblock %}
+
+{% block header %}
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
+
+{% block body %}
+<h2>{{ site_id|title }}</h2>
+    {% for row in rows %}
+<div><span style="width: 140px; float: left;"> {{ row.category }}&nbsp;</span>{{ row.count }}</div>
+    {% endfor %}
+{% endblock %}

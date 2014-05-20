@@ -4,91 +4,74 @@
  * Copyright (C) 2013 Dmitry Borovikov.
  */
 
+require_once './lib/Twig/Autoloader.php';
+require_once './swiftmailer/lib/swift_required.php';
+
 // Form email body and send mail message
 class NewsMailer {
-    protected $category = "";
-    protected $site = "";
     protected $body = "";
-    
     protected $contentlines = 0;
-    protected $transport;
-    protected $message;
+
+    protected $twig;
+    protected $template;
             
-  function __construct($address, $name) {
-    // Create the mail transport configuration
-    // TODO: get params from cfg
-    $this->transport = \Swift_SmtpTransport::newInstance('172.16.1.1',25);
+  function __construct($templateName) {
     // Create the message
-    $this->message = \Swift_Message::newInstance();
-    
-    $this->message->setFrom("robot@bdm.org.ru", "Crowd scan robot");
-    $this->message->setTo(array($address => $name));
-    
+    \Twig_Autoloader::register();
+    $loader = new \Twig_Loader_Filesystem(cfg('twigTemplates'));
+    $twig = new \Twig_Environment($loader, array(
+        'cache' => cfg('twigCache'),
+        'auto_reload' => true,
+    ));
+    $this->template = $twig->loadTemplate($templateName);
   }
-  function getContentLines() {
-      return $this->contentlines;
-  }
-    //
-    function addLine($s) {
-        $this->body .= $s . PHP_EOL;
-    }
   
-    // Add site Header
-    protected function addSiteHeader($sitename) {
-        if ($this->site != $sitename){
-            // <h1>Kickstarter</h1>
-            $this->addLine("<h2>".ucfirst($sitename)."</h2>");
-            $this->site = $sitename;
-            $this->category = "";   // Reset category
-        }
-    }
-
-    // Add category header
-    protected function addCategoryHeader($category) {
-        if ($this->category != $category) {
-            $this->addLine("<h3>$category</h3>");
-            $this->category = $category;
-        }
-    }
-    
-    // Add one line with content (ref, name ...)
-    function addContentLine($row) {
-        $this->addSiteHeader($row->site_id);
-        $this->addCategoryHeader($row->category);
-        
-        $s = '<div><a href="' . $row->short_url . '" class="project line" title="'
-            . htmlspecialchars($row->blurb) . '">'
-            . htmlspecialchars($row->name) . '</a></div>';
-        $this->addLine($s);
+  // Get the subject block out
+  // If the block doesn't exist, use a default
+  function renderBlock($block, $param) {
+    return $this->template->hasBlock($block)
+        ? $this->template->renderBlock($block, $param) 
+        : "Block $block does not defined";
+  }
+  
+    function addBodyContent($rows, $block = "body") {
+        $this->body .= $this->renderBlock($block, $rows);
         $this->contentlines++;
-    }
-
-    // Add one line with stats (category, count)
-    function addStatLine($row) {
-        $this->addSiteHeader($row->site_id);
-        
-        $s = '<div><span style="width: 140px; float: left;">'.$row->category.'&nbsp;</span>'.$row->count.'</div>';
-        $this->addLine($s);
-        $this->contentlines++;
-    }
-    
-    function addSubject($subject) {
-        $this->message->setSubject($subject);
     }
     
     function addHeader($digest) {
-        if ($this->contentlines == 0)
-            $this->body = "<h2>No new projects from latest $digest email.</h2>";
+        $this->body = $this->renderBlock("header", $digest) . $this->body;
     }
     
     function addFooter($digest) {
-        $this->body .= "<p>Please do not reply to this message</p>";
+        $this->body .= $this->renderBlock("footer", $digest);
     }
     
-    function send() {
-        $this->message->setBody($this->body, 'text/html');
-        $mailer = \Swift_Mailer::newInstance($this->transport);
-        $result = $mailer->send($this->message);
+    function send($digest, $address, $name) {
+        if ($this->contentlines == 0) {
+            return;
+        }
+        $params = compact($digest, $address, $name);
+        $this->addHeader($params);
+        $this->addFooter($params);
+        if (opt('nomail')) {
+            echo "</pre>";
+            echo $this->body;
+            echo "<pre>";
+            return;
+        }
+        $message = \Swift_Message::newInstance();
+        $message->setBody($this->body, 'text/html');
+
+        $message->setSubject($this->renderBlock("subject", $params));
+        $message->setFrom($this->renderBlock("from", $params), $this->renderBlock("fromname", $params));
+        $message->setTo(array($address => $name));
+
+        // Create the mail transport configuration
+        // TODO: get params from cfg
+        $transport = \Swift_SmtpTransport::newInstance('172.16.1.1',25);
+        $mailer = \Swift_Mailer::newInstance($transport);
+        $result = $mailer->send($message);
         // TODO: add result check
     }
 }

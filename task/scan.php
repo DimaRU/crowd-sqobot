@@ -2,25 +2,16 @@
 
 // Scan kickstarter.com new projects
 class TaskScan extends Task {
-  static function table($table) {
-    return cfg('dbPrefix').$table;
-  }
-  
-  public function getSiteOptions($site_id) {
-    if (!$scancfg = cfg("scan $site_id")) die("No scan $site_id configuration string");
-
-    list($index_table, $page_table, $stats_table, $proto, $start_page) = explode(' ', trim($scancfg));
-    $index_table = static::table($index_table);
-    $page_table = static::table($page_table);
-    $stats_table = static::table($stats_table);
-    return compact('index_table', 'page_table', 'stats_table', 'proto', 'start_page');
+  public function getDbOptions($site_id) {
+    $opt = cfgDbOptions("dbNames");
+    return $opt[$site_id];
   }
   
   public function getSiteStartURL($site_id) {
-    $options = $this->getSiteOptions($site_id);
-    return $options['start_page'];
+    $opt = cfgOptions("scan");
+    return $opt[$site_id]['start_page'];
   }
-  
+
   private function scan_index($site_id, $url, $options, $maxpage = null) {
     echo "Scanning index for $site_id", PHP_EOL;
     extract($options);
@@ -58,7 +49,7 @@ class TaskScan extends Task {
     foreach($projects as $project) {
         $options['ref_page'] = $project->ref_page;
         try {
-            Sqissor::process($proto . $project->project_id, $site_id.".Page", $options);
+            Sqissor::process($project->project_id, $site_id.".Page", $options);
         } catch (\Exception $e) {
             echo 'Exception: ', exLine($e), PHP_EOL;
         }
@@ -88,7 +79,7 @@ class TaskScan extends Task {
     // 1. Select all records for site_id
     // scan stats
     // Fetch all new projects
-    $sql = "SELECT `project_id` ".
+    $sql = "SELECT `project_id`, `real_url` ".
            "FROM `$page_table` ".
            "WHERE `mailformed` = 0 and `site_id` = \"$site_id\" and `deadline` > now() and (`state` = \"live\" OR `state` Is Null)";
     
@@ -102,7 +93,8 @@ class TaskScan extends Task {
     
     foreach($projects as $project) {
         try {
-            Sqissor::process($proto . $project->project_id, $site_id.".Stats", $options) and $newrows++;
+            $options['real_url'] = $project->real_url;
+            Sqissor::process($project->project_id, $site_id.".Stats", $options) and $newrows++;
         } catch (\Exception $e) {
             echo 'Exception: ', exLine($e), PHP_EOL;
         }
@@ -119,7 +111,7 @@ class TaskScan extends Task {
       return print 'scan new SITENAME --maxpage=num';
     }
     $site_id = opt(0);
-    $options = $this->getSiteOptions($site_id);
+    $options = $this->getDbOptions($site_id);
     $maxpage = isset($args['maxpage']) ? $args['maxpage'] : null ;
 
     try {
@@ -138,7 +130,7 @@ class TaskScan extends Task {
       return print 'scan stats SITENAME';
     }
     $site_id = opt(0);
-    $options = $this->getSiteOptions($site_id);
+    $options = $this->getDbOptions($site_id);
 
     $this->scan_stats($site_id, $options);
   }

@@ -3,23 +3,6 @@
 abstract class Task {
   public $name;
 
-  //* $web null list both CLI and web tasks, bool
-  //= array of str 'atoms', 'queue', ... suitable for factory()
-  static function all($web = false) {
-    $standard = S(glob(ROOT.'task/*.php', GLOB_NOESCAPE), array('.basename', '.php'));
-    $user = S(glob(USER.'user/[Tt]ask*.php', GLOB_NOESCAPE),
-              array('|', 'basename', array('.substr', 4, -4)));
-    $tasks = array_unique(S::down(array_merge($standard, $user)));
-
-    if ($web === null) {
-      return $tasks;
-    } else {
-      return S::build($tasks, function ($name) use ($web) {
-        if (($web ^ S::unprefix($name, 'web')) == 0) { return $name; }
-      });
-    }
-  }
-
   static function make($task) {
     $class = static::factory($task);
     return new $class;
@@ -73,7 +56,7 @@ abstract class Task {
       $duration = microtime(true) - $started;
       log("End {$this->name} $task ". opt(0). 
               sprintf('. Execution time %1.2f sec. ', $duration). 
-              "Downloads/timeouts: ".Download::$requests."/".Download::$timeouts);
+              "Downloads/timeouts/wait: ".Download::$requests."/".Download::$timeouts."/".Download::$starttransfer_times);
     } catch (\Exception $e) {
       ETaskError::re($e, "Exception while running task [$id].");
     }

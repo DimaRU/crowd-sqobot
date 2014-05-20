@@ -1,0 +1,72 @@
+{% extends 'email.html.twig' %}
+
+{% block from -%}
+robot@bdm.org.ru
+{%- endblock %}
+
+{% block fromname -%}
+Crowd scan robot
+{%- endblock %}
+
+{% block subject -%}
+{{ digest|title }} new projects digest.
+{%- endblock %}
+
+{% block header %}
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
+
+{% block kickstarter %}
+<div>
+<h2>Kickstarter</h2>
+    {% set category = '' %}
+    {% for row in rows %}
+      {% if category != row.category %}
+    <h3><span class="category">
+      <a href="https://www.kickstarter.com/discover/categories/{{row.category}}">{{row.category}}</a>
+    </span></h3>
+      {% set category = row.category %}  
+      {% endif %}
+<div class="sub-header">
+    <img alt="Project picture" class="fl avatar" src="{{row.avatar}}" />
+      <div class="fl headline notranslate">
+        <a href="{{row.short_url}}" class="bold x-large notranslate">{{row.name}}</a>
+        <p class="notranslate">{{row.blurb}}</p>
+      </div>
+      <div class="fl project-information">
+      <a href="http://www.indiegogo.com{{row.location_url}}">{{row.location}}</a>
+      </div>
+</div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block indiegogo %}
+<br>
+<div>
+<h2>Indiegogo</h2>
+    {% set category = '' %}
+    {% for row in rows %}
+      {% if category != row.category %}
+    <div>
+    <h3><span class="category">
+      <a href="http://www.indiegogo.com/projects?filter_category={{row.category}}">{{row.category}}</a>
+    </span></h3>
+    </div>
+      {% set category = row.category %}  
+      {% endif %}
+<div class="sub-header">
+    <img alt="Project picture" class="fl avatar" src="{{row.avatar}}" />
+      <div class="fl headline notranslate">
+        <a href="{{row.short_url}}" class="bold x-large notranslate">{{row.name}}</a>
+        <p class="notranslate">{{row.blurb}}</p>
+      </div>
+      <div class="fl project-information">
+      <a href="http://www.indiegogo.com{{row.location_url}}">{{row.location}}</a>
+      </div>
+</div>
+    {% endfor %}
+</div>
+{% endblock %}
