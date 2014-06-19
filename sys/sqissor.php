@@ -1,10 +1,12 @@
 <?php namespace Sqobot;
 
 abstract class Sqissor {
-  public $name;         // Real sqissor class name
-
   public $url;
-  public $options;
+
+  private $name;         // Real sqissor class name
+  private $options;
+  public $row = array();
+
   static $domain_name;
   
   // DOMDocument processing
@@ -19,7 +21,7 @@ abstract class Sqissor {
     return rescue(
       // Main function
       function () use ($url, $site, $options, $self) {
-        $result = $self::factory($site, $options)->sliceURL($url);
+        $result = $self::factory($url, $site, $options)->sliceURL();
         return $result;
       },
       // Executed hen some error thrown
@@ -29,7 +31,7 @@ abstract class Sqissor {
     );
   }
 
-  static function factory($site, array $options = null) {
+  static function factory($url, $site, array $options = null) {
     $class = cfg("class $site", NS.'$');
 
     if (!$class) {
@@ -37,7 +39,7 @@ abstract class Sqissor {
     }
 
     if (class_exists($class)) {
-      return new $class($options);
+      return new $class($url, $options);
     } else {
       throw new ENoSqissor("Undefined Sqissor class [$class] of site [$site].".
                            "You can list custom class under 'class $site=YourClass'".
@@ -55,56 +57,27 @@ abstract class Sqissor {
     }
   }
 
-  static function make(array $options = null) {
-    return new static($options);
+  static function make($url, array $options = null) {
+    return new static($url, $options);
   }
 
-  function __construct(array $options = null) {
+  function __construct($url, array $options = null) {
+    $this->url = $url;
     $this->name = static::siteNameFrom($this);
     $this->options = $options;
   }
 
-  function sliceURL($url) {
-    $this->url = $url;
-    log("Process {$this->name} $url", 'debug');
-    //$referer = dirname($url);
-    //strrchr($referer, '/') === false and $referer = null;
-    return $this->doSlice($url, $this->options);
+  function sliceURL() {
+    log("Process {$this->name} {$this->url}", 'debug');
+    return $this->startParse();
   }
 
   //
-  // Processes given $data string. 'Processing' means that it's parsed and new
-  // URLs are ->enqueue()'d, Pool entries created and so on. The actual purpose
-  // of the robot.
-  //
-  //* $data str   - typically is a fetched URL content unless ->sliceURL() is
-  //  overriden in a child class.
-  //
-  //? slice('<!DOCTYPE html><html>...</html>')
-  //
-  function slice($data) {
-    return $this->doSlice($data, $this->options);
-  }
-
-  //
-  // Real download resource
-  //
-  function loadURL($url, $headers = array() ) {
-    return download($url, $headers);
-  }
-
-  //
-  // Overridable method that contains the actual page parsing logics.
-  //
-  //* $data str     - value given to ->slice() - typically fetched URL (HTML code).
-  //* $extra array  - associated with this queue item (see ->enqueue()). The same
-  //  value can be accessed by ->extra().
+  // Overridable method that starts download and parce given url
   //
   //= mixed return value is ignored
   //
-  //? doSlice('<!DOCTYPE html><html>...</html>', array('a' => 'b'))
-  //
-  protected abstract function doSlice($data);
+  protected abstract function startParse();
 
   //
   // Return associated domain name;

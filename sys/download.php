@@ -7,15 +7,17 @@ class Download {
   static $timeouts = 0;                 // Timeouts, for stats
   static $starttransfer_times = 0;      // Total starttransfer_time
 
-  public $contextOptions = array();
-  public $url;
-  public $headers;
+  private $contextOptions = array();
+  private $url;
+  private $headers;
+  private $callback;
 
   static $responseHeaders;
-  public $reply;
 
-  static function it($url, $headers = array()) {
-    return static::make()->setContext($url, $headers)->read()->reply;
+  // Return Download object
+  static function start($url, array $headers = array(), $callback = null) {
+    $dw = static::make()->setContext($url, $callback, $headers)->read();
+    call_user_func($callback, $dw);
   }
 
   static function make() {
@@ -24,10 +26,10 @@ class Download {
 
   function __construct() {
     static::$responseHeaders = array();
-    if (!Download::$curl) {
-        Download::$curl = curl_init();
+    if (!self::$curl) {
+        self::$curl = curl_init();
     }
-    if (!Download::$curl) {
+    if (!self::$curl) {
           throw new RuntimeException("Cannot init curl library.");
     }
     $this->contextOptions = array(
@@ -65,30 +67,27 @@ class Download {
     }
   }
 
-  function urlPart($part) {
-    return parse_url($this->url, $part);
-  }
-
-  function setContext($url, $headers = array()) {
+  function setContext($url, $callback, array $headers = array()) {
     $this->url(realURL($url));
+    $this->callback = $callback;
     is_array($headers) or $headers = array('referer' => $headers);
     $this->headers = array_change_key_case($headers);
-    curl_setopt_array(Download::$curl, $this->contextOptions);
-    curl_setopt(Download::$curl, CURLOPT_HTTPHEADER, $this->normalizeHeaders());
-    curl_setopt(Download::$curl, CURLOPT_URL, $this->url);
+    curl_setopt_array(self::$curl, $this->contextOptions);
+    curl_setopt(self::$curl, CURLOPT_HTTPHEADER, $this->normalizeHeaders());
+    curl_setopt(self::$curl, CURLOPT_URL, $this->url);
     return $this;
   }
 
   function read() {
     //$limit = min(static::$maxFetchSize, PHP_INT_MAX);
      for($retry = 0; $retry < cfg('dlRetry'); $retry++) {
-        $this->reply = curl_exec(static::$curl);
-        Download::$requests++;
+        curl_exec(static::$curl);
+        self::$requests++;
         $this->write_log();
         if (($errno = curl_errno(static::$curl)) != CURLE_OPERATION_TIMEOUTED) {
             break;
         }
-        Download::$timeouts++;
+        self::$timeouts++;
      } 
     
     switch($errno) {
@@ -102,13 +101,17 @@ class Download {
              return $this;
           }
       default :
-        throw new \RuntimeException("Error '".curl_error(Download::$curl)."' loading [{$this->url}].");
+        throw new \RuntimeException("Error '".curl_error(static::$curl)."' loading [{$this->url}].");
     }
   }
 
+  public function getContent() {
+      return curl_multi_getcontent(static::$curl);
+  }
+    
   function close() {
-    $h = Download::$curl and curl_close($h);
-    Download::$curl = null;
+    $h = self::$curl and curl_close($h);
+    self::$curl = null;
     return $this;
   }
   
@@ -168,46 +171,46 @@ class Download {
     return $result;
   }
 
-  function has($header) {
+  private function has($header) {
     return isset($this->headers[$header]);
   }
 
-  function header_accept_language($str = '') {
+  private function header_accept_language($str = '') {
     return cfg('dl languages');
   }
 
-  function header_accept_charset($str = '') {
+  private function header_accept_charset($str = '') {
     return cfg('dl charsets');
   }
 
-  function header_accept_encoding($str = '') {
+  private function header_accept_encoding($str = '') {
     return cfg('dl encoding');
   }
 
-  function header_accept($str = '') {
+  private function header_accept($str = '') {
     return cfg('dl mimes');
   }
 
-  function header_user_agent() {
+  private function header_user_agent() {
     return cfg('dl useragent');
   }
 
-  function header_cache_control() {
+  private function header_cache_control() {
     return cfg('dl cache');
   }
 
-  function header_referer() {
-    return 'http://'.$this->urlPart(PHP_URL_HOST).'/';
+  private function header_referer() {
+    return 'http://'.parse_url($this->url, PHP_URL_HOST).'/';
   }
   
   static function logFile() {
     return strftime( opt('dlLog', cfg('dlLog')) );
   }
 
-  static function httpReturnCode() {
-    return curl_getinfo(Download::$curl, CURLINFO_HTTP_CODE);
+  public function httpReturnCode() {
+    return curl_getinfo(self::$curl, CURLINFO_HTTP_CODE);
   }
-  static function httpMovedURL() {
+  public function httpMovedURL() {
       if (array_search("Status: 301 Moved Permanently", static::$responseHeaders) !== NULL) {
           foreach (static::$responseHeaders as $hdr) {
               if (strpos($hdr, "Location:") !== false) {
@@ -219,8 +222,8 @@ class Download {
   }
   
   // Create log record
-  function summarize($url) {
-    $meta = curl_getinfo(Download::$curl);
+  private function summarize($url) {
+    $meta = curl_getinfo(self::$curl);
 
     $separ = '+'.str_repeat('-', 73)."\n";
     $result = $separ.$url."\n";
@@ -240,7 +243,7 @@ class Download {
 
     // TODO: stats
     if (isset($meta['starttransfer_time'])) {
-        Download::$starttransfer_times += $meta['starttransfer_time']; 
+        self::$starttransfer_times += $meta['starttransfer_time']; 
     }
     $stats = array_intersect_key(
         $meta, 

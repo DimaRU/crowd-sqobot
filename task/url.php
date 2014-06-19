@@ -21,16 +21,6 @@ class TaskUrl extends Task {
 
     $data = download($url, $headers);
     
-    if (!empty($args['tidy'])) {
-        static $config = array('indent' => false,
-                               'preserve-entities' => true,
-                               'output-html' => true,
-                               'wrap'        => 0);
-        $tidy = new \tidy;
-        $data = $tidy->repairString($data, $config, 'utf8');
-        unset($tidy);
-    }
-
     if ($to = &$args['to']) {
       is_string($to) or $to = 'out/'.parse_url($url, PHP_URL_HOST).'.html';
 

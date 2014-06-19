@@ -419,8 +419,8 @@ function parseXML($str) {
 }
 
 //* $headers hash of str/array, str 'Referer'
-function download($url, $headers = array()) {
-  return Download::it($url, $headers);
+function download($url, array $headers = array(), $callback = null) {
+  return Download::start($url, $headers, $callback);
 }
 
 function realURL($url) {
