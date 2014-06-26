@@ -25,6 +25,8 @@ class TaskScan extends Task {
         }
     } while($url);
     
+    finishDownload();
+    
     $sql = "SELECT COUNT(1) AS count FROM `$index_table` WHERE `site_id` = \"$site_id\"";
     $stmt = exec($sql);
     $rows = $stmt->fetchAll();
@@ -54,6 +56,7 @@ class TaskScan extends Task {
             echo 'Exception: ', exLine($e), PHP_EOL;
         }
     }
+    finishDownload();
     
     // Clean up index
     // Delete only scanned
@@ -99,7 +102,8 @@ class TaskScan extends Task {
             echo 'Exception: ', exLine($e), PHP_EOL;
         }
     }
-    
+    finishDownload();
+
     log("Done scan stats $site_id, rows processed/new: $pages/$newrows.");
   }
     
@@ -167,6 +171,7 @@ class TaskScan extends Task {
     
     echo "Process url $url", PHP_EOL;
     $url = Sqissor::process($url, $site, $options);
+    finishDownload();
     if ($url) {
         echo "Returned $url", PHP_EOL;
     }

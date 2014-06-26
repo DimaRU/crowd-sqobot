@@ -16,27 +16,27 @@ class SIndiegogoStats extends Sqissor {
     }
 
     protected function startParse() {
-        download($this->getopt('real_url'), array('accept' => "application/json"), array(&$this,'parseData'));
+        $this->loadURL($this->getopt('real_url'), array('accept' => "application/json"), array(&$this,'parseData'));
     }
     
-    function parseData(Download $dw) {
+    function parseData($httpReturnCode, $data, $httpMovedURL) {
         $this->row = array('site_id' => 'indiegogo', 
                      'load_time' => date(DATE_ATOM),
                      'project_id' =>  $this->url);
 
         // Trace project remove
-        if ($dw->httpReturnCode() == 404) {
+        if ($httpReturnCode == 404) {
             Row::setTableName($this->getopt('page_table'));
             Row::updateIgnoreWith(array('state' => "404"), array('project_id' => $this->url));
             return;
         }
 
         // Project rename
-        if (($newurl = $dw->httpMovedURL()) !== false) {
+        if ($httpMovedURL !== false) {
             // Mark old project page
             warn("Renamed ".$this->url);
             Row::setTableName($this->getopt('page_table'));
-            Row::updateIgnoreWith(array('real_url' => $newurl), array('project_id' => $this->url));
+            Row::updateIgnoreWith(array('real_url' => $httpMovedURL), array('project_id' => $this->url));
             // TODO: Rescan project
             //$idx = $this->row;
             //$idx['ref_page'] = $newurl;                  // old
@@ -44,7 +44,6 @@ class SIndiegogoStats extends Sqissor {
             //Row::createOrReplaceWith($idx);
         }
 
-        $data = $dw->getContent();
         $pdata = json_decode($data, true);
         $this->row['pledged'] = $pdata['balance'];
         $this->row['backers_count'] = $pdata['funders'];

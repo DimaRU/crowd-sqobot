@@ -10,10 +10,10 @@ class SKickstarterPage extends Sqissor {
     static $accept = "text/html";
     
     protected function startParse() {
-        download("https://" . $this->url, array('accept' => "text/html", 'referer' => $this->getopt('ref_page')), array(&$this,'parseData'));
+        $this->loadURL("https://" . $this->url, array('accept' => "text/html", 'referer' => $this->getopt('ref_page')), array(&$this,'parseData'));
     }
     
-    function parseData(Download $dw) {
+    function parseData($httpReturnCode, $data, $httpMovedURL) {
         $this->row = array('site_id' => 'kickstarter', 
                      'load_time' => date(DATE_ATOM),
                      'project_id' => strstr($this->url, $this->domain()),
@@ -22,14 +22,14 @@ class SKickstarterPage extends Sqissor {
             );
         Row::setTableName($this->getopt('page_table'));
 
-        if ($dw->httpReturnCode() == 404) {
+        if ($httpReturnCode == 404) {
             $this->row['state'] = "404";
             Row::createOrReplaceWith($this->row);
             return;
         }
 
         try {
-            $this->parsePage($dw);
+            $this->parsePage($data);
         } catch (ESqissor $e) {
             $this->row['mailformed'] = 1;
             Row::createOrReplaceWith($this->row);
@@ -38,8 +38,7 @@ class SKickstarterPage extends Sqissor {
         Row::createOrReplaceWith($this->row);
     }
 
-    private function parsePage(Download $dw) {
-        $data = $dw->getContent();
+    private function parsePage($data) {
         $this->initDom($data);
         //$htmlstr = 'window.current_project = "{ .... }";1234';
         if (($pos1 = strpos($data, 'window.current_project')) === false) {

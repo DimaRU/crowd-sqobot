@@ -9,13 +9,13 @@ class SKickstarterIndex extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
     
     protected function startParse() {
-        download($this->url, array('accept' => "application/json"), array(&$this,'parseData'));
+        $this->loadURL($this->url, array('accept' => "application/json"), array(&$this,'parseData'));
         // http://www.kickstarter.com/discover/advanced?page=xxx&ref=recently_launched&sort=launch_date
         return $this->incrementPageNum($this->url, "page");
     }
     
-    function parseData(Download $dw) {
-        if ($dw->httpReturnCode() == 404) {
+    function parseData($httpReturnCode, $data, $httpMovedURL) {
+        if ($httpReturnCode == 404) {
             return;
         }
         
@@ -25,7 +25,6 @@ class SKickstarterIndex extends Sqissor {
         'ref_page' => strstr($this->url, $this->domain()) );
         Row::setTableName($this->getopt('index_table'));
 
-        $data = $dw->getContent();
         $index = json_decode($data, true);
         foreach ($index['projects'] as $project) {
             $this->row['project_id'] = strstr($project['urls']['web']['project'], $this->domain());

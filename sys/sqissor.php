@@ -73,7 +73,15 @@ abstract class Sqissor {
   }
 
   //
-  // Overridable method that starts download and parce given url
+  // Really download resource
+  //
+  function loadURL($url, array $headers, $callback) {
+            log("Load $this->url : $url", 'debug');
+          download($url, $headers, $callback);
+  }
+
+  //
+  // Overridable method that contains the actual page parsing logics.
   //
   //= mixed return value is ignored
   //
@@ -272,6 +280,10 @@ abstract class Sqissor {
 
   // Init DOMDocument processing
   function initDom($data) {
+    if ($this->finder)
+        unset ($this->finder);
+    if ($this->htmldom)
+        unset ($this->htmldom);
     $this->htmldom = new \DOMDocument();
     //$this->htmldom->validateOnParse = true;
     $this->htmldom->recover = true;

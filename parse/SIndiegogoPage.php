@@ -10,11 +10,11 @@ class SIndiegogoPage extends Sqissor {
     private $newurl;
     
     protected function startParse() {
-        download("https://" . $this->url, array('accept' => "text/html", 'referer' => $this->getopt('ref_page')), array(&$this,'parseData'));
+        $this->loadURL("https://" . $this->url, array('accept' => "text/html", 'referer' => $this->getopt('ref_page')), array(&$this,'parseData'));
     }
     
-    function parseData(Download $dw) {
-        if (($this->newurl = $dw->httpMovedURL()) === false) {
+    function parseData($httpReturnCode, $data, $httpMovedURL) {
+        if (($this->newurl = $httpMovedURL) === false) {
             $this->newurl = "https://" . $this->url;
         }
         $this->newurl = str_replace("/x/505059", "", $this->newurl);
@@ -27,51 +27,29 @@ class SIndiegogoPage extends Sqissor {
                       'mailformed' => 0
         );
         Row::setTableName($this->getopt('page_table'));
-        if ($dw->httpReturnCode() == 404) {
+        if ($httpReturnCode == 404) {
             $this->row['state'] = "404";
             Row::createOrReplaceWith($this->row);
             return;
         }
 
-        $data = $dw->getContent();
         $this->initDom($data);
         try {
-            parsePage();
+            $this->parsePage();
         } catch (ESqissor $e) {
             $this->row['mailformed'] = 1;
             Row::createOrReplaceWith($this->row);
             throw $e;
         }
-        download($this->newurl, array('accept' => "application/json"), array(&$this,'parseJson'));
+        $this->loadURL($this->newurl . "/show_tab/home", array('accept' => "text/html", 'referer' => $this->newurl), array(&$this,'parsePageHomeTab'));
     }
     
-    function parseJson(Download $dw) {
-        if ($dw->httpReturnCode() == 404) {
+    function parsePageHomeTab($httpReturnCode, $data, $httpMovedURL) {
+        if ($httpReturnCode == 404) {
             $this->row['state'] = "404";
             Row::createOrReplaceWith($this->row);
             return;
         }
-        
-        $json = $dw->getContent();
-        try {
-            $this->parseJson1($json);
-        } catch (ESqissor $e) {
-            $this->row['mailformed'] = 1;
-            Row::createOrReplaceWith($this->row);
-            throw $e;
-        }
-        
-
-        download($this->newurl . "/show_tab/home", array('accept' => "text/html", 'referer' => $this->newurl), array(&$this,'parsePageHomeTab'));
-    }
-    
-    function parsePageHomeTab(Download $dw) {
-        if ($dw->httpReturnCode() == 404) {
-            $this->row['state'] = "404";
-            Row::createOrReplaceWith($this->row);
-            return;
-        }
-        $data = $dw->getContent();
         $this->initDom($data);
         try {
             $this->parsePageHomeTab1();
@@ -81,9 +59,27 @@ class SIndiegogoPage extends Sqissor {
             throw $e;
         }
         
-        Row::createOrReplaceWith($this->row);
+        $this->loadURL($this->newurl, array('accept' => "application/json"), array(&$this,'parseJson'));
     }
 
+    function parseJson($httpReturnCode, $data, $httpMovedURL) {
+        if ($httpReturnCode == 404) {
+            $this->row['state'] = "404";
+            Row::createOrReplaceWith($this->row);
+            return;
+        }
+        
+        try {
+            $this->parseJson1($data);
+        } catch (ESqissor $e) {
+            $this->row['mailformed'] = 1;
+            Row::createOrReplaceWith($this->row);
+            throw $e;
+        }
+
+        Row::createOrReplaceWith($this->row);
+    }
+    
     private function parsePageHomeTab1() {
         // <a class="i-icon-link js-clip" data-clipboard-text="http://igg.me/at/gosnellmovie/x">
         $this->row['short_url'] = str_replace("/x", "", $this->queryAttribute('.//a[@class="i-icon-link js-clip"]', "data-clipboard-text"));
@@ -93,20 +89,18 @@ class SIndiegogoPage extends Sqissor {
     }
 
     private function parsePage() {
-            // <div class="i-img" data-src="https://images.indiegogo.com/projects/731457/pictures/new_baseball/20140327190616-IndieGogo_Image.jpg?1395972381">
-            // <meta property="og:image" content="https://images.indiegogo.com/projects/731457/pictures/primary/20140327190616-IndieGogo_Image.jpg?1395972381"/>
-            $this->row['avatar'] = strstr($this->queryAttribute('.//meta[@property="og:image"]', "content"), "?", true);
-
-            // 
-            // <div class="i-icon-project-note">
-            //  <span class="i-icon i-glyph-icon-22-fixedfunding"></span>
-            //  <span>Fixed Funding</span><span class="i-icon i-icon-info-bubble"></span>
-            // </div>
-            $this->row['campaign_type'] = trim($this->queryValue('.//div[@class="i-icon-project-note"]'));
-            // <a href="/explore?filter_city=Los+Angeles&amp;filter_country=CTRY_US" class="i-byline-location-link">Los Angeles, California, United States</a>
-            $this->row['location_url'] = $this->queryAttribute('.//a[@class="i-byline-location-link"]', "href");
-            parse_str($this->row['location_url'], $output);
-            $this->row['country'] = substr($output['filter_country'], 5);    // skip 'CTRY_'
+        // <div class="i-img" data-src="https://images.indiegogo.com/projects/731457/pictures/new_baseball/20140327190616-IndieGogo_Image.jpg?1395972381">
+        // <meta property="og:image" content="https://images.indiegogo.com/projects/731457/pictures/primary/20140327190616-IndieGogo_Image.jpg?1395972381"/>
+        $this->row['avatar'] = strstr($this->queryAttribute('.//meta[@property="og:image"]', "content"), "?", true);
+        // <div class="i-icon-project-note">
+        //  <span class="i-icon i-glyph-icon-22-fixedfunding"></span>
+        //  <span>Fixed Funding</span><span class="i-icon i-icon-info-bubble"></span>
+        // </div>
+        $this->row['campaign_type'] = trim($this->queryValue('.//div[@class="i-icon-project-note"]'));
+        // <a href="/explore?filter_city=Los+Angeles&amp;filter_country=CTRY_US" class="i-byline-location-link">Los Angeles, California, United States</a>
+        $this->row['location_url'] = $this->queryAttribute('.//a[@class="i-byline-location-link"]', "href");
+        parse_str($this->row['location_url'], $output);
+        $this->row['country'] = substr($output['filter_country'], 5);    // skip 'CTRY_'
     }
 
     private function parseJson1($json) {

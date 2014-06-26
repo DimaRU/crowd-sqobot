@@ -10,11 +10,11 @@ class SIndiegogoIndex extends Sqissor {
     const PROJ_MARK = '<div class="i-img" data-src="https://images.indiegogo.com/projects/';
     
     protected function startParse() {
-        download($this->url, array('accept' => "text/html"), array(&$this,'parseData'));
+        $this->loadURL($this->url, array('accept' => "text/html"), array(&$this,'parseData'));
     }
     
-    function parseData(Download $dw) {
-        if ($dw->httpReturnCode() == 404) {
+    function parseData($httpReturnCode, $data, $httpMovedURL) {
+        if ($httpReturnCode == 404) {
             return;
         }
 
@@ -24,7 +24,6 @@ class SIndiegogoIndex extends Sqissor {
         'ref_page' => $this->url);
         Row::setTableName($this->getopt('index_table'));
 
-        $data = $dw->getContent();
         //     <div class="i-img" data-src="https://images.indiegogo.com/projects/766558/pictures/new_baseball/20140425161938-profile-pic.jpg?1398467986">
         $pos1 = 0;
         while($pos1 = strpos($data, self::PROJ_MARK, $pos1)) {
