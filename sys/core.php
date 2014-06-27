@@ -249,7 +249,7 @@ function fire($event, $args = array()) {
 
 function log($msg, $level = 'info') {
   if (strpos(cfg('log', ' $ '), " $level ") !== false and $log = logFile()) {
-    $msg = sprintf('$ %s [%s] %s', strtoupper($level), date('H:i:s d-m-Y'), $msg);
+    $msg = sprintf('$ %s [%s] %d %s', strtoupper($level), date('H:i:s d-m-Y'), round(memory_get_usage(true)/1048576,0), $msg);
 
     S::mkdirOf($log);
     touch($log);
@@ -408,19 +408,13 @@ function getTzOffset(\DateTime $date = null) {
   return sprintf('%+d:%02d', $hour * ($min < 0 ? -1 : 1), $min);
 }
 
-//= DOMDocument
-function parseXML($str) {
-  $doc = new \DOMDocument;
-  if ($doc->loadXML($str)) {
-    return $doc;
-  } else {
-    throw new Error('Cannot parse string as XML.');
-  }
+//* $headers hash of str/array, str 'Referer'
+function download($url, array $headers = array(), $callback = null) {
+  return Download::start($url, $headers, $callback);
 }
 
-//* $headers hash of str/array, str 'Referer'
-function download($url, $headers = array()) {
-  return Download::it($url, $headers);
+function finishDownload() {
+  Download::finishAllRequests();
 }
 
 function realURL($url) {
@@ -445,10 +439,6 @@ function realURL($url) {
   } else {
     return $url;
   }
-}
-
-function taskURL($task, array $query = array()) {
-  return '.'.S::queryStr(compact('task') + $query);
 }
 
 function onFatal($func, $name = null) {

@@ -9,10 +9,12 @@ class SKickstarterPage extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
     static $accept = "text/html";
     
-    protected function doSlice($url) {
-        $data = $this->loadURL("https://" . $url, array('accept' => "text/html", 'referer' => $this->getopt('ref_page')));
-
-        $row = array('site_id' => 'kickstarter', 
+    protected function startParse() {
+        $this->loadURL("https://" . $this->url, array('accept' => "text/html", 'referer' => $this->getopt('ref_page')), array(&$this,'parseData'));
+    }
+    
+    function parseData($httpReturnCode, $data, $httpMovedURL) {
+        $this->row = array('site_id' => 'kickstarter', 
                      'load_time' => date(DATE_ATOM),
                      'project_id' => strstr($this->url, $this->domain()),
                      'ref_page' => $this->getopt('ref_page'),
@@ -20,24 +22,24 @@ class SKickstarterPage extends Sqissor {
             );
         Row::setTableName($this->getopt('page_table'));
 
-        if (Download::httpReturnCode() == 404) {
-            $row['state'] = "404";
-            Row::createOrReplaceWith($row);
+        if ($httpReturnCode == 404) {
+            $this->row['state'] = "404";
+            Row::createOrReplaceWith($this->row);
             return;
         }
 
-        $this->initDom($data);
         try {
-            $this->parsePage($data, $row);
+            $this->parsePage($data);
         } catch (ESqissor $e) {
-            $row['mailformed'] = 1;
-            Row::createOrReplaceWith($row);
+            $this->row['mailformed'] = 1;
+            Row::createOrReplaceWith($this->row);
             throw $e;
         }
-        Row::createOrReplaceWith($row);
+        Row::createOrReplaceWith($this->row);
     }
 
-    private function parsePage(&$data, &$row) {
+    private function parsePage($data) {
+        $this->initDom($data);
         //$htmlstr = 'window.current_project = "{ .... }";1234';
         if (($pos1 = strpos($data, 'window.current_project')) === false) {
             throw new ESqissor($this, "json data not found");
@@ -47,10 +49,10 @@ class SKickstarterPage extends Sqissor {
         $json = substr($data, $pos1+1, $pos2-$pos1);
         $json = stripslashes(htmlspecialchars_decode($json, ENT_QUOTES));
         $pdata = json_decode($json, true);
-        $row['project_json'] = $json;
+        $this->row['project_json'] = $json;
 
         //<div class="full-description">
-        $row['full_desc'] = $this->htmlToText($this->queryValue('.//div[@class="full-description"]'));
+        $this->row['full_desc'] = $this->htmlToText($this->queryValue('.//div[@class="full-description"]'));
 
         /*
         //<div id="risks">
@@ -59,30 +61,30 @@ class SKickstarterPage extends Sqissor {
 
         // <meta content="-72.198562622071" property="kickstarter:location:longitude">
         // <meta content="41.333982467652" property="kickstarter:location:latitude">
-        //$row['latitude'] = $this->queryAttribute('.//meta[@property="kickstarter:location:latitude"]', "content");
-        //$row['longitude'] = $this->queryAttribute('.//meta[@property="kickstarter:location:longitude"]', "content");
+        //$this->row['latitude'] = $this->queryAttribute('.//meta[@property="kickstarter:location:latitude"]', "content");
+        //$this->row['longitude'] = $this->queryAttribute('.//meta[@property="kickstarter:location:longitude"]', "content");
 
-        $row['project_id'] = strstr($pdata['urls']['web']['project'], $this->domain());
-        $row['name'] = $pdata['name'];
-        $row['blurb'] = $pdata['blurb'];
-        $row['avatar'] = strstr($pdata['photo']['little'], "?", true);
-        $row['goal'] = $pdata['goal'];
-        $row['country'] = $pdata['country'];
-        $row['currency'] = $pdata['currency'];
-        $row['currency_symbol'] = $pdata['currency_symbol'];
-        $row['currency_trailing_code'] = $pdata['currency_trailing_code'];
+        $this->row['project_id'] = strstr($pdata['urls']['web']['project'], $this->domain());
+        $this->row['name'] = $pdata['name'];
+        $this->row['blurb'] = $pdata['blurb'];
+        $this->row['avatar'] = strstr($pdata['photo']['little'], "?", true);
+        $this->row['goal'] = $pdata['goal'];
+        $this->row['country'] = $pdata['country'];
+        $this->row['currency'] = $pdata['currency'];
+        $this->row['currency_symbol'] = $pdata['currency_symbol'];
+        $this->row['currency_trailing_code'] = $pdata['currency_trailing_code'];
         //$st = $pdata['deadline'];
         //$proj['deadline'] = new \DateTime("@$st");
         //$st = $pdata['launched_at'];
         //$proj['launched_at'] = new \DateTime("@$st");
-        $row['deadline'] = date(DATE_ATOM,$pdata['deadline']);
-        $row['launched_at'] = date(DATE_ATOM,$pdata['launched_at']);
+        $this->row['deadline'] = date(DATE_ATOM,$pdata['deadline']);
+        $this->row['launched_at'] = date(DATE_ATOM,$pdata['launched_at']);
 
-        $row['creator_name'] = $pdata['creator']['name'];
-        $row['location'] = $pdata['location']['name'];
-        $row['location_url'] = $pdata['location']['urls']['web']['discover'];
-        $row['category'] = $pdata['category']['name'];
-        $row['short_url'] = $pdata['urls']['web']['project_short'];
-        if ($pdata['state'] != 'live') { $row['state'] = $pdata['state']; }
+        $this->row['creator_name'] = $pdata['creator']['name'];
+        $this->row['location'] = $pdata['location']['name'];
+        $this->row['location_url'] = $pdata['location']['urls']['web']['discover'];
+        $this->row['category'] = $pdata['category']['name'];
+        $this->row['short_url'] = $pdata['urls']['web']['project_short'];
+        if ($pdata['state'] != 'live') { $this->row['state'] = $pdata['state']; }
     }
 }
