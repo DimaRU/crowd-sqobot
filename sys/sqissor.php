@@ -5,6 +5,8 @@ abstract class Sqissor {
 
   private $name;         // Real sqissor class name
   private $options;
+  public $dw_url;      // Current processed url;
+
   public $row = array();
 
   static $domain_name;
@@ -26,7 +28,7 @@ abstract class Sqissor {
       },
       // Executed hen some error thrown
       function ($e) use ($url, $options, $self) {
-        error("$self::process() has failed on url {$url} : ".exLine($e));
+        error("$self::process() has failed on ".exLine($e));
       }
     );
   }
@@ -76,8 +78,8 @@ abstract class Sqissor {
   // Really download resource
   //
   function loadURL($url, array $headers, $callback) {
-            log("Load $this->url : $url", 'debug');
-          download($url, $headers, $callback);
+    $this->dw_url = $url;
+    download($url, $headers, $callback);
   }
 
   //
@@ -297,7 +299,7 @@ abstract class Sqissor {
   function querySafe($expression) {
       $nodes = $this->finder->query($expression);
       if ($nodes->length == 0) {
-          throw new ESqissor($this, "Not found expression '$expression'.");
+          throw new ESqissor($this, "url:{$this->url} dw:{$this->dw_url}: Not found expression '$expression'.");
       }
       return $nodes;
   }
@@ -305,7 +307,7 @@ abstract class Sqissor {
   function queryAttribute($expression, $attribute) {
     $node = $this->querySafe($expression)->item(0);
     if (!$node->hasAttribute($attribute)) {
-        throw new ESqissor($this, "Not found attibyte '$attribute' in '$expression'.");
+        throw new ESqissor($this, "{$this->dw_url}: Not found attibyte '$attribute' in '$expression'.");
     }
     return $node->getAttribute($attribute);
   }

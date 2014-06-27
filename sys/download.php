@@ -56,9 +56,12 @@ class Download {
         CURLOPT_TIMEOUT        => (float) cfg('dlTimeout'),         // timeout on response
         CURLOPT_SSL_VERIFYHOST => false,                            // don't verify ssl
         CURLOPT_SSL_VERIFYPEER => false,                            //
-        CURLOPT_VERBOSE        => true,                             //
+        CURLOPT_VERBOSE        => false,                            //
         CURLOPT_ENCODING       => "",                               // Accept all encoding
         CURLINFO_HEADER_OUT    => true,                             // Report req headers in info
+        CURLOPT_COOKIESESSION  => true,
+        CURLOPT_COOKIEFILE     => "",
+        CURLOPT_COOKIEJAR      => "",
     );
   }
   
@@ -147,7 +150,7 @@ class Download {
         $request = self::$outstanding_requests[$ch_array_key];
         // Mark as free for use
         unset(self::$outstanding_requests[$ch_array_key]);
-        // curl_multi_remove_handle(self::$curl_mh, $ch);
+        curl_multi_remove_handle(self::$curl_mh, $ch);
         $request->execute();
       }
     
@@ -171,28 +174,19 @@ class Download {
         self::$timeouts++;
         $this->retry++;
         if ($this->retry < cfg('dlRetry'))
-        {
-            curl_multi_remove_handle(self::$curl_mh, $this->curl);
             $this->startRequest();     // Retry request
-        }
     }
 
-    $reply = $this->getContent();
-    $httpCode = $this->httpCode();
-    $httpMovedURL = $this->httpMovedURL();
-    curl_multi_remove_handle(self::$curl_mh, $this->curl);
-    log("URL: $this->url size:".strlen($reply), 'debug');
-    
     switch($errno) {
       case CURLE_OK:
-          if (in_array($httpCode, array(0,200))) {
-            call_user_func($this->callback, $httpCode, $reply, $httpMovedURL);
+          if (in_array($this->httpCode(), array(0,200))) {
+            call_user_func($this->callback, $this->httpCode(), $this->getContent(), $this->httpMovedURL());
             return $this;
           }
       case CURLE_HTTP_NOT_FOUND:
           log("Return http code:".$this->httpCode()." ".$this->url, ($this->httpCode() == 404) ? 'warn':'error');
           if ($this->httpCode() == 404) {
-            call_user_func($this->callback, $this->httpCode(), $reply, $this->httpMovedURL());
+            call_user_func($this->callback, $this->httpCode(), $this->getContent(), $this->httpMovedURL());
             return $this;
           }
       default :

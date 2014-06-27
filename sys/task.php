@@ -52,11 +52,15 @@ abstract class Task {
     try {
       log("Begin {$this->name} $task ". opt(0));
       $started = microtime(true);
+      $rustart = getrusage();
       $result = $this->$func($args);
+      $ruend = getrusage();
       $duration = microtime(true) - $started;
+      $utime = $ruend["ru_utime.tv_sec"] - $rustart["ru_utime.tv_sec"];
+      $stime = $ruend["ru_stime.tv_sec"] - $rustart["ru_stime.tv_sec"];
       log("End {$this->name} $task ". opt(0). 
-              sprintf('. Execution time %1.2f sec. ', $duration).
-              sprintf('Max memory used: %5.2f Mb. ', round(memory_get_peak_usage(true)/1048576,2)).
+              sprintf('. Execution time(total/cpu user/cpu sys): %1.0f/%1.0f/%1.0f sec. ', $duration, $utime, $stime).
+              sprintf('Memory used %5.2f Mb. ', round(memory_get_peak_usage(true)/1048576,2)).
               "Downloads/timeouts/wait: ".Download::$requests."/".Download::$timeouts."/".Download::$starttransfer_times);
     } catch (\Exception $e) {
       ETaskError::re($e, "Exception while running task [$id].");

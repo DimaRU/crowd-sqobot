@@ -41,7 +41,11 @@ class SIndiegogoPage extends Sqissor {
             Row::createOrReplaceWith($this->row);
             throw $e;
         }
-        $this->loadURL($this->newurl . "/show_tab/home", array('accept' => "text/html", 'referer' => $this->newurl), array(&$this,'parsePageHomeTab'));
+        //$this->loadURL(str_replace('/projects/', '/project/', $this->newurl) . "/embedded", array('accept' => "text/html", 'referer' => $this->newurl, ), array(&$this,'parseEmbedded'));
+        $this->loadURL($this->newurl . "/show_tab/home", array('accept' => "text/html", 'referer' => $this->newurl, 'X-Requested-With' => 'XMLHttpRequest'), array(&$this,'parsePageHomeTab'));
+    }
+    
+    function parseEmbedded($httpReturnCode, $data, $httpMovedURL) {
     }
     
     function parsePageHomeTab($httpReturnCode, $data, $httpMovedURL) {
@@ -77,17 +81,12 @@ class SIndiegogoPage extends Sqissor {
             throw $e;
         }
 
-        Row::createOrReplaceWith($this->row);
+        if (!isset($this->row['location_url']))
+            error("indiegogo.page: url:{$this->url} dw:{$this->dw_url}: location_url not defined.");
+        else
+            Row::createOrReplaceWith($this->row);
     }
     
-    private function parsePageHomeTab1() {
-        // <a class="i-icon-link js-clip" data-clipboard-text="http://igg.me/at/gosnellmovie/x">
-        $this->row['short_url'] = str_replace("/x", "", $this->queryAttribute('.//a[@class="i-icon-link js-clip"]', "data-clipboard-text"));
-        // <a href="/individuals/6877579" class="i-name">Ann and Phelim Media</a>
-        $this->row['creator_name'] = $this->queryValue('.//a[@class="i-name"]');
-        $this->row['full_desc'] = $this->htmlToText($this->queryValue('.//div[@class="i-description"]'));
-    }
-
     private function parsePage() {
         // <div class="i-img" data-src="https://images.indiegogo.com/projects/731457/pictures/new_baseball/20140327190616-IndieGogo_Image.jpg?1395972381">
         // <meta property="og:image" content="https://images.indiegogo.com/projects/731457/pictures/primary/20140327190616-IndieGogo_Image.jpg?1395972381"/>
@@ -98,9 +97,26 @@ class SIndiegogoPage extends Sqissor {
         // </div>
         $this->row['campaign_type'] = trim($this->queryValue('.//div[@class="i-icon-project-note"]'));
         // <a href="/explore?filter_city=Los+Angeles&amp;filter_country=CTRY_US" class="i-byline-location-link">Los Angeles, California, United States</a>
-        $this->row['location_url'] = $this->queryAttribute('.//a[@class="i-byline-location-link"]', "href");
-        parse_str($this->row['location_url'], $output);
-        $this->row['country'] = substr($output['filter_country'], 5);    // skip 'CTRY_'
+        if ($this->finder->query('.//a[@class="i-byline-location-link"]')->length != 0) {
+            $this->row['location_url'] = $this->queryAttribute('.//a[@class="i-byline-location-link"]', "href");
+            parse_str($this->row['location_url'], $output);
+            $this->row['country'] = substr($output['filter_country'], 5);    // skip 'CTRY_'
+        }
+    }
+
+    private function parsePageHomeTab1() {
+        // <a class="i-icon-link js-clip" data-clipboard-text="http://igg.me/at/gosnellmovie/x">
+        $this->row['short_url'] = str_replace("/x", "", $this->queryAttribute('.//a[@class="i-icon-link js-clip"]', "data-clipboard-text"));
+        // <a href="/individuals/6877579" class="i-name">Ann and Phelim Media</a>
+        $this->row['creator_name'] = $this->queryValue('.//a[@class="i-name"]');
+        $this->row['full_desc'] = $this->htmlToText($this->queryValue('.//div[@class="i-description i-old-gen-description"]'));
+
+        // <a href="/explore?filter_city=Los+Angeles&amp;filter_country=CTRY_US" class="i-byline-location-link">Los Angeles, California, United States</a>
+        if ($this->finder->query('.//a[@class="i-byline-location-link"]')->length != 0) {
+            $this->row['location_url'] = $this->queryAttribute('.//a[@class="i-byline-location-link"]', "href");
+            parse_str($this->row['location_url'], $output);
+            $this->row['country'] = substr($output['filter_country'], 5);    // skip 'CTRY_'
+        }
     }
 
     private function parseJson1($json) {
