@@ -3,7 +3,7 @@
 define(__NAMESPACE__.'\\NS', __NAMESPACE__.'\\');
 defined(NS.'ROOT') or define(NS.'ROOT', dirname(__DIR__).'/');
 defined(NS.'USER') or define(NS.'USER', ROOT);
-define(NS.'VERSION', '0.3');
+define(NS.'VERSION', '0.4');
 
 error_reporting(-1);
 ini_set('display_errors', true);
@@ -124,3 +124,5 @@ foreach ((array) opt('cfg') as $config => $value) {
 if ($tz = cfg('timeZone') and !date_default_timezone_set($tz)) {
   warn("Cannot set default timezone to $tz, using ".date_default_timezone_get().".");
 }
+// Init download
+Download::init();

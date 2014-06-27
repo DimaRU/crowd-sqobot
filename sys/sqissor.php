@@ -1,10 +1,14 @@
 <?php namespace Sqobot;
 
 abstract class Sqissor {
-  public $name;         // Real sqissor class name
-
   public $url;
-  public $options;
+
+  private $name;         // Real sqissor class name
+  private $options;
+  public $dw_url;      // Current processed url;
+
+  public $row = array();
+
   static $domain_name;
   
   // DOMDocument processing
@@ -19,17 +23,17 @@ abstract class Sqissor {
     return rescue(
       // Main function
       function () use ($url, $site, $options, $self) {
-        $result = $self::factory($site, $options)->sliceURL($url);
+        $result = $self::factory($url, $site, $options)->sliceURL();
         return $result;
       },
       // Executed hen some error thrown
       function ($e) use ($url, $options, $self) {
-        error("$self::process() has failed on url {$url} : ".exLine($e));
+        error("$self::process() has failed on ".exLine($e));
       }
     );
   }
 
-  static function factory($site, array $options = null) {
+  static function factory($url, $site, array $options = null) {
     $class = cfg("class $site", NS.'$');
 
     if (!$class) {
@@ -37,7 +41,7 @@ abstract class Sqissor {
     }
 
     if (class_exists($class)) {
-      return new $class($options);
+      return new $class($url, $options);
     } else {
       throw new ENoSqissor("Undefined Sqissor class [$class] of site [$site].".
                            "You can list custom class under 'class $site=YourClass'".
@@ -55,56 +59,35 @@ abstract class Sqissor {
     }
   }
 
-  static function make(array $options = null) {
-    return new static($options);
+  static function make($url, array $options = null) {
+    return new static($url, $options);
   }
 
-  function __construct(array $options = null) {
+  function __construct($url, array $options = null) {
+    $this->url = $url;
     $this->name = static::siteNameFrom($this);
     $this->options = $options;
   }
 
-  function sliceURL($url) {
-    $this->url = $url;
-    log("Process {$this->name} $url", 'debug');
-    //$referer = dirname($url);
-    //strrchr($referer, '/') === false and $referer = null;
-    return $this->doSlice($url, $this->options);
+  function sliceURL() {
+    log("Process {$this->name} {$this->url}", 'debug');
+    return $this->startParse();
   }
 
   //
-  // Processes given $data string. 'Processing' means that it's parsed and new
-  // URLs are ->enqueue()'d, Pool entries created and so on. The actual purpose
-  // of the robot.
+  // Really download resource
   //
-  //* $data str   - typically is a fetched URL content unless ->sliceURL() is
-  //  overriden in a child class.
-  //
-  //? slice('<!DOCTYPE html><html>...</html>')
-  //
-  function slice($data) {
-    return $this->doSlice($data, $this->options);
-  }
-
-  //
-  // Real download resource
-  //
-  function loadURL($url, $headers = array() ) {
-    return download($url, $headers);
+  function loadURL($url, array $headers, $callback) {
+    $this->dw_url = $url;
+    download($url, $headers, $callback);
   }
 
   //
   // Overridable method that contains the actual page parsing logics.
   //
-  //* $data str     - value given to ->slice() - typically fetched URL (HTML code).
-  //* $extra array  - associated with this queue item (see ->enqueue()). The same
-  //  value can be accessed by ->extra().
-  //
   //= mixed return value is ignored
   //
-  //? doSlice('<!DOCTYPE html><html>...</html>', array('a' => 'b'))
-  //
-  protected abstract function doSlice($data);
+  protected abstract function startParse();
 
   //
   // Return associated domain name;
@@ -299,6 +282,10 @@ abstract class Sqissor {
 
   // Init DOMDocument processing
   function initDom($data) {
+    if ($this->finder)
+        unset ($this->finder);
+    if ($this->htmldom)
+        unset ($this->htmldom);
     $this->htmldom = new \DOMDocument();
     //$this->htmldom->validateOnParse = true;
     $this->htmldom->recover = true;
@@ -312,7 +299,7 @@ abstract class Sqissor {
   function querySafe($expression) {
       $nodes = $this->finder->query($expression);
       if ($nodes->length == 0) {
-          throw new ESqissor($this, "Not found expression '$expression'.");
+          throw new ESqissor($this, "url:{$this->url} dw:{$this->dw_url}: Not found expression '$expression'.");
       }
       return $nodes;
   }
@@ -320,7 +307,7 @@ abstract class Sqissor {
   function queryAttribute($expression, $attribute) {
     $node = $this->querySafe($expression)->item(0);
     if (!$node->hasAttribute($attribute)) {
-        throw new ESqissor($this, "Not found attibyte '$attribute' in '$expression'.");
+        throw new ESqissor($this, "{$this->dw_url}: Not found attibyte '$attribute' in '$expression'.");
     }
     return $node->getAttribute($attribute);
   }

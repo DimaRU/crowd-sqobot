@@ -15,15 +15,17 @@ class SKickstarterStats extends Sqissor {
              $row1['updates_count'] == $row2[0]->updates_count);
     }
     
-    protected function doSlice($url) {
-        $data = $this->loadURL("https://" . $url, array('accept' => "text/html"));
-        
+    protected function startParse() {
+        $this->loadURL("https://" . $this->url, array('accept' => "text/html"), array(&$this,'parseData'));
+    }
+    
+    function parseData($httpReturnCode, $data, $httpMovedURL) {
         $project_id = strstr($this->url, $this->domain());
-        $row = array('site_id' => 'kickstarter', 
+        $this->row = array('site_id' => 'kickstarter', 
                      'load_time' => date(DATE_ATOM),
                      'project_id' =>  $project_id);
         
-        if (Download::httpReturnCode() == 404) {
+        if ($httpReturnCode == 404) {
             Row::setTableName($this->getopt('page_table'));
             Row::updateIgnoreWith(array('state' => "404"), array('project_id' => $project_id));
             return;
@@ -44,13 +46,12 @@ class SKickstarterStats extends Sqissor {
             Row::updateIgnoreWith(array('state' => $pdata['state']), array('project_id' => $project_id));
         }
         
-        //$row['project_json'] = $json;
-        $row['pledged'] = $pdata['pledged'];
-        $row['backers_count'] = $pdata['backers_count'];
-        $row['comments_count'] = $pdata['comments_count'];
-        $row['updates_count'] = $pdata['updates_count'];
+        $this->row['pledged'] = $pdata['pledged'];
+        $this->row['backers_count'] = $pdata['backers_count'];
+        $this->row['comments_count'] = $pdata['comments_count'];
+        $this->row['updates_count'] = $pdata['updates_count'];
 
-        if (!$row['pledged'] && !$row['backers_count'] && !$row['comments_count'] && !$row['updates_count'] = 0)
+        if (!$this->row['pledged'] && !$this->row['backers_count'] && !$this->row['comments_count'] && !$this->row['updates_count'] = 0)
         {  return; }
 
         // Compare with old
@@ -63,16 +64,16 @@ class SKickstarterStats extends Sqissor {
         $lastrow = $stmt->fetchAll();
         $stmt->closeCursor();
 
-        if (count($lastrow) != 0 && $this->compareRows($row, $lastrow)) {
+        if (count($lastrow) != 0 && $this->compareRows($this->row, $lastrow)) {
             // Update date ?
             /* Row::setTableName($this->getopt('stats_table'));
-            Row::updateIgnoreWith(array('load_time' => $row['load_time']), 
+            Row::updateIgnoreWith(array('load_time' => $this->row['load_time']), 
                     array('project_id' => $project_id, 'load_time' => $lastrow[0]->load_time));
              */
         } else {
             // Add new record
             Row::setTableName($this->getopt('stats_table'));
-            Row::createWith($row);
+            Row::createWith($this->row);
             return true;
         }
     }

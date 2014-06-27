@@ -9,13 +9,16 @@ class SIndiegogoIndex extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
     const PROJ_MARK = '<div class="i-img" data-src="https://images.indiegogo.com/projects/';
     
-    protected function doSlice($url) {
-        $data = $this->loadURL($url, array('accept' => "text/html"));
-
-        if (Download::httpReturnCode() == 404)
+    protected function startParse() {
+        $this->loadURL($this->url, array('accept' => "text/html"), array(&$this,'parseData'));
+    }
+    
+    function parseData($httpReturnCode, $data, $httpMovedURL) {
+        if ($httpReturnCode == 404) {
             return;
-        
-        $row = array(
+        }
+
+        $this->row = array(
         'site_id' => 'indiegogo',
         'load_time' => date(DATE_ATOM),
         'ref_page' => $this->url);
@@ -26,8 +29,8 @@ class SIndiegogoIndex extends Sqissor {
         while($pos1 = strpos($data, self::PROJ_MARK, $pos1)) {
             $pos1 += strlen(self::PROJ_MARK);
             $pos2 = strpos($data, "/", $pos1);
-            $row['project_id'] = "www.indiegogo.com/projects/" . substr($data, $pos1, $pos2 - $pos1);
-            Row::createOrReplaceWith($row);
+            $this->row['project_id'] = "www.indiegogo.com/projects/" . substr($data, $pos1, $pos2 - $pos1);
+            Row::createOrReplaceWith($this->row);
         }
         return false;
     }
