@@ -92,19 +92,18 @@ class TaskScan extends Task {
     $pages = count($projects);
     echo "Scanning $pages pages stats for $site_id.", PHP_EOL;
     log("Total stats rows for $site_id: ".$pages);
-    $newrows = 0;
     
     foreach($projects as $project) {
         try {
             $options['real_url'] = $project->real_url;
-            Sqissor::process($project->project_id, $site_id.".Stats", $options) and $newrows++;
+            Sqissor::process($project->project_id, $site_id.".Stats", $options);
         } catch (\Exception $e) {
             echo 'Exception: ', exLine($e), PHP_EOL;
         }
     }
     finishDownload();
 
-    log("Done scan stats $site_id, rows processed/new: $pages/$newrows.");
+    log("Done scan stats $site_id, rows processed: $pages.");
   }
     
   //
@@ -223,5 +222,4 @@ class TaskScan extends Task {
 
     $this->scan_pages($site_id, $options);
   }
-  
 }

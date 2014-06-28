@@ -1,6 +1,9 @@
 <?php namespace Sqobot;
 
 class Row {
+  static $createdRows = 0;
+  static $updatedRows = 0;
+  
   static $defaultTable;
   static $table;
   
@@ -69,7 +72,7 @@ class Row {
            ' (`'.join('`, `', $fields).'`) VALUES'.
            ' ('.join(', ', S($bind, '"??"')).')';
     $this->id = exec($sql, $bind);
-    
+    self::$createdRows++;
     return $this;
   }
 
@@ -81,6 +84,7 @@ class Row {
     $sql = "$sqlVerb `".$this->getTableName().'` SET '.join(', ', S($fields, '"`?` = ??"')).
            ' WHERE '.join('AND ', S($fieldsw, '"`?` = ??"'));
     exec($sql, array_merge($bind, $bindw));
+    self::$updatedRows++;
     return $this;
   }
 
