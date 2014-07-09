@@ -229,15 +229,17 @@ class Download {
   //* $context resource of stream_context_create()
   //* $file resource of fopen(), false if failed
   protected function write_log() {
-    if ($log = static::logFile()) {
-      if (is_file($log) and filesize($log) >= S::size(cfg('dlLogMax'))) {
-        file_put_contents($log, '', LOCK_EX);
-      }
+    if (strpos(cfg('log', ' $ '), ' debug ') !== false or $this->httpCode() != 200) {
+        if ($log = static::logFile()) {
+          if (is_file($log) and filesize($log) >= S::size(cfg('dlLogMax'))) {
+            file_put_contents($log, '', LOCK_EX);   // truncate file
+          }
 
-      S::mkdirOf($log);
-      $info = $this->summarize($this->url);
-      $ok = file_put_contents($log, "$info\n\n", LOCK_EX | FILE_APPEND);
-      $ok or warn("Cannot write to dlLog file [$log].");
+          S::mkdirOf($log);
+          $info = $this->summarize($this->url);
+          $ok = file_put_contents($log, "$info\n\n", LOCK_EX | FILE_APPEND);
+          $ok or warn("Cannot write to dlLog file [$log].");
+        }
     }
   }
 
