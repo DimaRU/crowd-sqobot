@@ -4,8 +4,8 @@
  * Copyright (C) 2013 Dmitry Borovikov.
  */
 
-require_once './lib/Twig/Autoloader.php';
-require_once './lib/swiftmailer/lib/swift_required.php';
+require_once './vendor/twig/twig/lib/Twig/Autoloader.php';
+require_once './vendor/swiftmailer/swiftmailer/lib/swift_required.php';
 
 // Form email body and send mail message
 class NewsMailer {

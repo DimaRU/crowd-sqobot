@@ -1,6 +1,6 @@
 0  *      *  *  *	root	/var/www/crowd-crawler/cli mail new hourly
-10 0-23/2 *  *  *	root	/var/www/crowd-crawler/cli scan stats kickstarter
-10 1-23/2 *  *  *	root	/var/www/crowd-crawler/cli scan stats indiegogo
+5  *      *  *  *	root	/var/www/crowd-crawler/cli scan stats kickstarter
+20 *      *  *  *	root	/var/www/crowd-crawler/cli scan stats indiegogo
 30 *      *  *  *	root	/var/www/crowd-crawler/cli scan new kickstarter --maxpage=10
 45 *      *  *  *	root	/var/www/crowd-crawler/cli scan new indiegogo
 56 18     *  *  *	root	/var/www/crowd-crawler/cli mail stat daily dmitry@borovikov.name
