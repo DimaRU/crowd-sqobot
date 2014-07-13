@@ -74,7 +74,6 @@ class SKickstarterStats extends Sqissor {
             // Add new record
             Row::setTableName($this->getopt('stats_table'));
             Row::createWith($this->row);
-            return true;
         }
     }
 }

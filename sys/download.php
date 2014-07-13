@@ -3,6 +3,7 @@
 class Download {
   static $requests = 0;                 // Total download requests, for stats
   static $timeouts = 0;                 // Timeouts, for stats
+  static $toomany = 0;                   // Too many Requests errors, for stats
   static $starttransfer_times = 0;      // Total starttransfer_time
   
   static $maxRequests;                  // Max number of parallel requests
@@ -125,6 +126,7 @@ class Download {
   private function startRequest() {
       self::$outstanding_requests[(int)$this->curl] = $this;
       self::$requests++;
+      remoteDelay();        // Sleep beetwen new requests
       curl_multi_add_handle(self::$curl_mh, $this->curl);
       // Start execution
       do {
@@ -170,11 +172,25 @@ class Download {
 
   private function execute() {
     $this->write_log();
-    if (($errno = curl_errno($this->curl)) == CURLE_OPERATION_TIMEOUTED) {
+    $errno = curl_errno($this->curl);
+
+    if ($errno == CURLE_OPERATION_TIMEOUTED) {
         self::$timeouts++;
         $this->retry++;
         if ($this->retry < cfg('dlRetry'))
-            $this->startRequest();     // Retry request
+            return $this->startRequest();     // Retry request
+    }
+    
+    if ($this->httpCode() == 429) {
+        self::$toomany++;           // Too many requests
+        $retryAfter = $this->httpRetryAfter();
+        warn("Return http code: 429 Too many requests, retry afler $retryAfter ". $this->url);
+        log("Content: " . $this->getContent(), 'debug');
+        if ($retryAfter == FALSE) {
+            throw new \RuntimeException("Error: no Retry_Afler header. [{$this->url}].");
+        }
+        remoteDelay(null, $retryAfter * 1000);
+        return $this->startRequest();     // Retry request
     }
 
     switch($errno) {
@@ -213,6 +229,16 @@ class Download {
       return false;
   }
   
+  // Return Retry-After header value
+  private function httpRetryAfter() {
+          foreach ($this->responseHeaders as $hdr) {
+              if (strpos($hdr, "Retry-After:") !== false) {
+                  return trim(str_replace("Retry-After:", "", $hdr));
+              }
+          }
+      return false;
+  }
+  
   function url($new = null) {
     if ($new) {
       if (!filter_var($new, FILTER_VALIDATE_URL)) {
@@ -229,15 +255,17 @@ class Download {
   //* $context resource of stream_context_create()
   //* $file resource of fopen(), false if failed
   protected function write_log() {
-    if ($log = static::logFile()) {
-      if (is_file($log) and filesize($log) >= S::size(cfg('dlLogMax'))) {
-        file_put_contents($log, '', LOCK_EX);
-      }
+    if (strpos(cfg('log', ' $ '), ' debug ') !== false or $this->httpCode() != 200) {
+        if ($log = static::logFile()) {
+          if (is_file($log) and filesize($log) >= S::size(cfg('dlLogMax'))) {
+            file_put_contents($log, '', LOCK_EX);   // truncate file
+          }
 
-      S::mkdirOf($log);
-      $info = $this->summarize($this->url);
-      $ok = file_put_contents($log, "$info\n\n", LOCK_EX | FILE_APPEND);
-      $ok or warn("Cannot write to dlLog file [$log].");
+          S::mkdirOf($log);
+          $info = $this->summarize($this->url);
+          $ok = file_put_contents($log, "$info\n\n", LOCK_EX | FILE_APPEND);
+          $ok or warn("Cannot write to dlLog file [$log].");
+        }
     }
   }
 
