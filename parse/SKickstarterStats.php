@@ -33,7 +33,7 @@ class SKickstarterStats extends Sqissor {
 
         //$htmlstr = 'window.current_project = "{ .... }";1234';
         if (($pos1 = strpos($data, 'window.current_project')) === false) {
-            throw new ESqissor($this, "json data not found");
+            throw new ESqissor($this, "url:{$this->url} dw:{$this->dw_url}: json data not found");
         }
         $pos1 = strpos($data,'"{', $pos1);
         $pos2 = strpos($data,'}"', $pos1);

@@ -61,7 +61,8 @@ abstract class Task {
       log("End {$this->name} $task ". opt(0). '.');
       log(sprintf('Execution time(total/cpu user/cpu sys): %1.0f/%1.0f/%1.0f sec.', $duration, $utime, $stime));
       log(sprintf('Memory used %5.2f Mb. ', round(memory_get_peak_usage(true)/1048576,2)));
-      log("Downloads/timeouts/wait: ".Download::$requests."/".Download::$timeouts."/".Download::$starttransfer_times);
+      log(sprintf('Downloads/MBytes/timeouts/wait: %d/%.3f/%d/%.0f', 
+              Download::$requests, Download::$size_download/1048576, Download::$timeouts, Download::$starttransfer_times));
       log("Rows created/updated: " . Row::$createdRows . "/" . Row::$updatedRows . '.');
     } catch (\Exception $e) {
       ETaskError::re($e, "Exception while running task [$id].");

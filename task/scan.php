@@ -39,8 +39,8 @@ class TaskScan extends Task {
     // Fetch all new projects
     $sql =  "SELECT `$index_table`.project_id, `$index_table`.ref_page ".
             "FROM `$index_table` ".
-            "LEFT JOIN `$page_table` ON `$index_table`.project_id = `$page_table`.project_id ".
-            "WHERE (`$page_table`.project_id IS NULL) AND (`$index_table`.site_id = \"$site_id\")";
+            "LEFT JOIN `$page_table` ON `$index_table`.project_id = `$page_table`.real_url ".
+            "WHERE (`$page_table`.real_url IS NULL) AND (`$index_table`.site_id = \"$site_id\")";
 
     $stmt = exec($sql);
     $projects = $stmt->fetchAll();
@@ -60,15 +60,15 @@ class TaskScan extends Task {
     
     // Clean up index
     // Delete only scanned
-    $sql =  "DELETE `$index_table` ".
+    /*$sql =  "DELETE `$index_table` ".
             "FROM `$index_table` ".
             "LEFT JOIN `$page_table` ON `$index_table`.project_id = `$page_table`.project_id ".
             "WHERE (`$page_table`.project_id IS NOT NULL) AND (`$index_table`.site_id = \"$site_id\")";
-    
+    */
     // Clean up index, delete all
-    //$sql =  "DELETE `$index_table` ".
-    //        "FROM `$index_table` ".
-    //        "WHERE `$index_table`.site_id = \"$site_id\"";
+    $sql =  "DELETE `$index_table` ".
+            "FROM `$index_table` ".
+            "WHERE `$index_table`.site_id = \"$site_id\"";
     
     $count = exec($sql);
     log("Done pages scan $site_id, $pages pages. $count pages deleted from index.");

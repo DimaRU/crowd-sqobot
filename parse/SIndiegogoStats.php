@@ -16,7 +16,7 @@ class SIndiegogoStats extends Sqissor {
     }
 
     protected function startParse() {
-        $this->loadURL($this->getopt('real_url'), array('accept' => "application/json"), array(&$this,'parseData'));
+        $this->loadURL("https://" . $this->getopt('real_url'), array('accept' => "application/json"), array(&$this,'parseData'));
     }
     
     function parseData($httpReturnCode, $data, $httpMovedURL) {
@@ -36,7 +36,8 @@ class SIndiegogoStats extends Sqissor {
             // Mark old project page
             warn("Renamed ".$this->url);
             Row::setTableName($this->getopt('page_table'));
-            Row::updateIgnoreWith(array('real_url' => $httpMovedURL), array('project_id' => $this->url));
+            Row::updateIgnoreWith(array('real_url' => strstr($httpMovedURL, $this->domain()) ), 
+                    array('project_id' => $this->url));
             // TODO: Rescan project
             //$idx = $this->row;
             //$idx['ref_page'] = $newurl;                  // old

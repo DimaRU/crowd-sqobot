@@ -3,8 +3,9 @@
 class Download {
   static $requests = 0;                 // Total download requests, for stats
   static $timeouts = 0;                 // Timeouts, for stats
-  static $toomany = 0;                   // Too many Requests errors, for stats
+  static $toomany = 0;                  // Too many Requests errors, for stats
   static $starttransfer_times = 0;      // Total starttransfer_time
+  static $size_download = 0;            // Total downloaded bytes
   
   static $maxRequests;                  // Max number of parallel requests
   static $curl_mh;                      // Curl_multi handle
@@ -173,10 +174,18 @@ class Download {
   private function execute() {
     $this->write_log();
     $errno = curl_errno($this->curl);
+    $meta = curl_getinfo($this->curl);
 
-    if ($errno == CURLE_OPERATION_TIMEOUTED) {
+    if (isset($meta['starttransfer_time']))
+        self::$starttransfer_times += $meta['starttransfer_time']; 
+    if (isset($meta['size_download']))
+        self::$size_download += $meta['size_download']; 
+    
+    // if ($errno == CURLE_OPERATION_TIMEOUTED) { // Does not work in multi-curl
+    if (isset($meta['starttransfer_time']) && $meta['starttransfer_time'] == 0) {
         self::$timeouts++;
         $this->retry++;
+        warn("Download timeout, retry $this->retry. $this->url");
         if ($this->retry < cfg('dlRetry'))
             return $this->startRequest();     // Retry request
     }
@@ -361,9 +370,6 @@ class Download {
         $result .= "Request:\n\n".static::joinHeaders($headers)."\n\n";
     }
 
-    if (isset($meta['starttransfer_time'])) {
-        self::$starttransfer_times += $meta['starttransfer_time']; 
-    }
     $stats = array_intersect_key(
         $meta, 
         array_flip(array(
