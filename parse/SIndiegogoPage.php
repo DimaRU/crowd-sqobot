@@ -21,15 +21,15 @@ class SIndiegogoPage extends Sqissor {
 
         $this->row = array( 'site_id' => 'indiegogo',
                       'load_time' => date(DATE_ATOM),
-                      'project_id' => strstr($this->url, $this->domain()),  // Cut https://
-                      'real_url' => $this->newurl,
+                      //'project_id' => strstr($this->url, $this->domain()),  // Cut https://
+                      'real_url' => strstr($this->newurl, $this->domain()),
                       'ref_page' => $this->getopt('ref_page'),
                       'mailformed' => 0
         );
         Row::setTableName($this->getopt('page_table'));
         if ($httpReturnCode == 404) {
-            $this->row['state'] = "404";
-            Row::createOrReplaceWith($this->row);
+            //$this->row['state'] = "404";
+            //Row::createOrReplaceWith($this->row);
             return;
         }
 
@@ -89,6 +89,8 @@ class SIndiegogoPage extends Sqissor {
     
     private function parsePage() {
         // <div class="i-img" data-src="https://images.indiegogo.com/projects/731457/pictures/new_baseball/20140327190616-IndieGogo_Image.jpg?1395972381">
+        // <meta property="og:url" content="http://www.indiegogo.com/projects/870602/fblk"/>
+        $this->row['project_id'] = strstr(str_replace('/fblk', '', $this->queryAttribute('.//meta[@property="og:url"]', "content")), $this->domain());
         // <meta property="og:image" content="https://images.indiegogo.com/projects/731457/pictures/primary/20140327190616-IndieGogo_Image.jpg?1395972381"/>
         $this->row['avatar'] = strstr($this->queryAttribute('.//meta[@property="og:image"]', "content"), "?", true);
         // <div class="i-icon-project-note">
@@ -109,8 +111,11 @@ class SIndiegogoPage extends Sqissor {
         $this->row['short_url'] = str_replace("/x", "", $this->queryAttribute('.//a[@class="i-icon-link js-clip"]', "data-clipboard-text"));
         // <a href="/individuals/6877579" class="i-name">Ann and Phelim Media</a>
         $this->row['creator_name'] = $this->queryValue('.//a[@class="i-name"]');
-        $this->row['full_desc'] = $this->htmlToText($this->queryValue('.//div[@class="i-description i-old-gen-description"]'));
-
+        if ($this->finder->query('.//div[@class="i-description i-old-gen-description"]')->length != 0) {
+            $this->row['full_desc'] = $this->htmlToText($this->queryValue('.//div[@class="i-description i-old-gen-description"]'));
+        } else {
+            $this->row['full_desc'] = $this->htmlToText($this->queryValue('.//div[@class="i-description"]'));
+        }
         // <a href="/explore?filter_city=Los+Angeles&amp;filter_country=CTRY_US" class="i-byline-location-link">Los Angeles, California, United States</a>
         if ($this->finder->query('.//a[@class="i-byline-location-link"]')->length != 0) {
             $this->row['location_url'] = $this->queryAttribute('.//a[@class="i-byline-location-link"]', "href");

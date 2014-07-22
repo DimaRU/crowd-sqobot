@@ -7,7 +7,7 @@
  */
 class SIndiegogoIndex extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
-    const PROJ_MARK = '<div class="i-img" data-src="https://images.indiegogo.com/projects/';
+    const PROJ_MARK = '<a href="/projects/';
     
     protected function startParse() {
         $this->loadURL($this->url, array('accept' => "text/html"), array(&$this,'parseData'));
@@ -24,11 +24,11 @@ class SIndiegogoIndex extends Sqissor {
         'ref_page' => $this->url);
         Row::setTableName($this->getopt('index_table'));
 
-        //     <div class="i-img" data-src="https://images.indiegogo.com/projects/766558/pictures/new_baseball/20140425161938-profile-pic.jpg?1398467986">
+        // <a href="/projects/donduffie-productions/pinw" class="i-project">
         $pos1 = 0;
         while($pos1 = strpos($data, self::PROJ_MARK, $pos1)) {
             $pos1 += strlen(self::PROJ_MARK);
-            $pos2 = strpos($data, "/", $pos1);
+            $pos2 = strpos($data, '/pinw', $pos1);
             $this->row['project_id'] = "www.indiegogo.com/projects/" . substr($data, $pos1, $pos2 - $pos1);
             Row::createOrReplaceWith($this->row);
         }

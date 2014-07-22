@@ -17,6 +17,7 @@ class SKickstarterPage extends Sqissor {
         $this->row = array('site_id' => 'kickstarter', 
                      'load_time' => date(DATE_ATOM),
                      'project_id' => strstr($this->url, $this->domain()),
+                     'real_url' => strstr($this->url, $this->domain()),
                      'ref_page' => $this->getopt('ref_page'),
                      'mailformed' => 0
             );
@@ -42,7 +43,7 @@ class SKickstarterPage extends Sqissor {
         $this->initDom($data);
         //$htmlstr = 'window.current_project = "{ .... }";1234';
         if (($pos1 = strpos($data, 'window.current_project')) === false) {
-            throw new ESqissor($this, "json data not found");
+            throw new ESqissor($this, "url:{$this->url} dw:{$this->dw_url}: json data not found");
         }
         $pos1 = strpos($data,'"{', $pos1);
         $pos2 = strpos($data,'}"', $pos1);
