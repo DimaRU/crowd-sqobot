@@ -26,10 +26,10 @@ class SIndiegogoPage extends Sqissor {
                       'ref_page' => $this->getopt('ref_page'),
                       'mailformed' => 0
         );
-        Row::setTableName($this->getopt('page_table'));
+        Row::setTableNameKey($this->getopt('page_table'), 'project_id');
         if ($httpReturnCode == 404) {
             //$this->row['state'] = "404";
-            //Row::createOrReplaceWith($this->row);
+            //Row::createOrUpdateWith($this->row);
             return;
         }
 
@@ -38,7 +38,7 @@ class SIndiegogoPage extends Sqissor {
             $this->parsePage();
         } catch (ESqissor $e) {
             $this->row['mailformed'] = 1;
-            Row::createOrReplaceWith($this->row);
+            Row::createOrUpdateWith($this->row);
             throw $e;
         }
         //$this->loadURL(str_replace('/projects/', '/project/', $this->newurl) . "/embedded", array('accept' => "text/html", 'referer' => $this->newurl, ), array(&$this,'parseEmbedded'));
@@ -50,8 +50,8 @@ class SIndiegogoPage extends Sqissor {
     
     function parsePageHomeTab($httpReturnCode, $data, $httpMovedURL) {
         if ($httpReturnCode == 404) {
-            $this->row['state'] = "404";
-            Row::createOrReplaceWith($this->row);
+            //$this->row['state'] = "404";
+            //Row::createOrUpdateWith($this->row);
             return;
         }
         $this->initDom($data);
@@ -59,7 +59,7 @@ class SIndiegogoPage extends Sqissor {
             $this->parsePageHomeTab1();
         } catch (ESqissor $e) {
             $this->row['mailformed'] = 1;
-            Row::createOrReplaceWith($this->row);
+            Row::createOrUpdateWith($this->row);
             throw $e;
         }
         
@@ -68,8 +68,8 @@ class SIndiegogoPage extends Sqissor {
 
     function parseJson($httpReturnCode, $data, $httpMovedURL) {
         if ($httpReturnCode == 404) {
-            $this->row['state'] = "404";
-            Row::createOrReplaceWith($this->row);
+            //$this->row['state'] = "404";
+            //Row::createOrUpdateWith($this->row);
             return;
         }
         
@@ -77,27 +77,28 @@ class SIndiegogoPage extends Sqissor {
             $this->parseJson1($data);
         } catch (ESqissor $e) {
             $this->row['mailformed'] = 1;
-            Row::createOrReplaceWith($this->row);
+            Row::createOrUpdateWith($this->row);
             throw $e;
         }
 
         if (!isset($this->row['location_url']))
             error("indiegogo.page: url:{$this->url} dw:{$this->dw_url}: location_url not defined.");
         else
-            Row::createOrReplaceWith($this->row);
+            Row::createOrUpdateWith($this->row);
     }
-    
+
     private function parsePage() {
         // <div class="i-img" data-src="https://images.indiegogo.com/projects/731457/pictures/new_baseball/20140327190616-IndieGogo_Image.jpg?1395972381">
         // <meta property="og:url" content="http://www.indiegogo.com/projects/870602/fblk"/>
         $this->row['project_id'] = strstr(str_replace('/fblk', '', $this->queryAttribute('.//meta[@property="og:url"]', "content")), $this->domain());
         // <meta property="og:image" content="https://images.indiegogo.com/projects/731457/pictures/primary/20140327190616-IndieGogo_Image.jpg?1395972381"/>
-        $this->row['avatar'] = strstr($this->queryAttribute('.//meta[@property="og:image"]', "content"), "?", true);
+        $this->row['avatar'] = strstr($this->queryAttribute('.//meta[@property="og:image"]', "content") . "?", "?", true);
         // <div class="i-icon-project-note">
         //  <span class="i-icon i-glyph-icon-22-fixedfunding"></span>
         //  <span>Fixed Funding</span><span class="i-icon i-icon-info-bubble"></span>
         // </div>
-        $this->row['campaign_type'] = trim($this->queryValue('.//div[@class="i-icon-project-note"]'));
+        $this->row['campaign_type'] = $this->querySafe('.//div[@class="i-icon-project-note"]')->item(0)->childNodes->item(3)->nodeValue;
+        //$this->row['campaign_type'] = trim($this->queryValue('.//div[@class="i-icon-project-note"]'));
         // <a href="/explore?filter_city=Los+Angeles&amp;filter_country=CTRY_US" class="i-byline-location-link">Los Angeles, California, United States</a>
         if ($this->finder->query('.//a[@class="i-byline-location-link"]')->length != 0) {
             $this->row['location_url'] = $this->queryAttribute('.//a[@class="i-byline-location-link"]', "href");

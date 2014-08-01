@@ -23,7 +23,7 @@ class SKickstarterIndex extends Sqissor {
         'site_id' => 'kickstarter',
         'load_time' => date(DATE_ATOM),
         'ref_page' => strstr($this->url, $this->domain()) );
-        Row::setTableName($this->getopt('index_table'));
+        Row::setTableNameKey($this->getopt('index_table'));
 
         $index = json_decode($data, true);
         foreach ($index['projects'] as $project) {

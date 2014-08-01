@@ -26,7 +26,7 @@ class SIndiegogoStats extends Sqissor {
 
         // Trace project remove
         if ($httpReturnCode == 404) {
-            Row::setTableName($this->getopt('page_table'));
+            Row::setTableNameKey($this->getopt('page_table'));
             Row::updateIgnoreWith(array('state' => "404"), array('project_id' => $this->url));
             return;
         }
@@ -35,7 +35,7 @@ class SIndiegogoStats extends Sqissor {
         if ($httpMovedURL !== false) {
             // Mark old project page
             warn("Renamed ".$this->url);
-            Row::setTableName($this->getopt('page_table'));
+            Row::setTableNameKey($this->getopt('page_table'));
             Row::updateIgnoreWith(array('real_url' => strstr($httpMovedURL, $this->domain()) ), 
                     array('project_id' => $this->url));
             // TODO: Rescan project
@@ -66,7 +66,7 @@ class SIndiegogoStats extends Sqissor {
 
         if (count($lastrow) == 0 || !$this->compareRows($this->row, $lastrow)) {
             // Add new record
-            Row::setTableName($this->getopt('stats_table'));
+            Row::setTableNameKey($this->getopt('stats_table'));
             Row::createWith($this->row);
         }
     }

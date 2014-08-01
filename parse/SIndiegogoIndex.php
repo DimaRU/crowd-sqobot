@@ -22,7 +22,7 @@ class SIndiegogoIndex extends Sqissor {
         'site_id' => 'indiegogo',
         'load_time' => date(DATE_ATOM),
         'ref_page' => $this->url);
-        Row::setTableName($this->getopt('index_table'));
+        Row::setTableNameKey($this->getopt('index_table'));
 
         // <a href="/projects/donduffie-productions/pinw" class="i-project">
         $pos1 = 0;

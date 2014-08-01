@@ -4,53 +4,43 @@ class Row {
   static $createdRows = 0;
   static $updatedRows = 0;
   
-  static $defaultTable;
-  static $table;
+  static $table;        // table name
+  static $key;          // primary key name
   
   private $row;
   private $where;
+  
   public $id;
 
-  static function setTableName($table = null) {
-    if (!$table) {
-      if ($table = static::$defaultTable) {
-        static::$table = cfg('dbPrefix').static::$defaultTable;
-      } else {
-        $class = get_called_class();
-        throw new Error("No default table specified for Row class $class.");
-      }
-    } else {
-        static::$table = $table;
-    }
-    return static::$table;
+  // Set table name and primary key
+  static function setTableNameKey($table, $key = null) {
+    static::$table = $table;
+    static::$key = $key;
   }
 
   function getTableName() {
     if (!static::$table) {
-      if (static::$defaultTable) {
-        static::$table = cfg('dbPrefix').static::$defaultTable;
-      } else {
-        $class = get_called_class();
-        throw new Error("No default table specified for Row class $class.");
-      }
+        throw new Error("No table specified for Row.");
     }
     return static::$table;
   }
 
+  function getKey() {
+    if (!static::$key) {
+        throw new Error("No primary key specified for Row.");
+    }
+    return static::$key;
+  }
+
+  
   static function make($fields = array(), $where = array()) {
     return new static($fields, $where);
   }
 
   //* $fields stdClass, hash
   function __construct($fields = array(), $where = array()) {
-    $this->defaults();
     $this->row = $fields;
     $this->where = $where;
-  }
-
-  // Must return $this.
-  function defaults() {
-    return $this;
   }
 
   static function count(array $fields = null) {
@@ -87,7 +77,24 @@ class Row {
     self::$updatedRows++;
     return $this;
   }
+  
+  protected function createOrUpdate() {
+    list($fieldsc, $bindc) = S::divide($this->row);
+    unset($this->row[$this->getKey()]);
+    list($fieldsu, $bindu) = S::divide($this->row);
 
+    $sql = "INSERT INTO `".$this->getTableName().'`'.
+           ' (`'.join('`, `', $fieldsc).'`) VALUES'.
+           ' ('.join(', ', S($bindc, '"??"')).')'.
+           ' ON DUPLICATE KEY UPDATE '.
+            join(', ', S($fieldsu, '"`?` = ??"'))
+            ;
+    $this->id = exec($sql, array_merge($bindc, $bindu));
+    self::$createdRows++;
+    return $this;
+
+  }
+  
   /*---------------------------------------------------------------------
   | RECORD MANIPULATION VERBS
   |--------------------------------------------------------------------*/
@@ -107,6 +114,11 @@ class Row {
     return static::make($fields)->createOrReplace();
   }
 
+  //= Row new entry
+  static function createOrUpdateWith($fields) {
+    return static::make($fields)->createOrUpdate();
+  }
+  
   //= Row updated entry
   static function updateWith($fields, $where) {
     return static::make($fields, $where)->update();

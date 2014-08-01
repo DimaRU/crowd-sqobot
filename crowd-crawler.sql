@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 4.2.0
+-- version 4.2.5
 -- http://www.phpmyadmin.net
 --
 -- Хост: localhost
--- Время создания: Май 13 2014 г., 21:50
--- Версия сервера: 5.5.37
--- Версия PHP: 5.4.27
+-- Время создания: Июл 31 2014 г., 21:56
+-- Версия сервера: 5.5.38
+-- Версия PHP: 5.4.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
@@ -58,8 +58,6 @@ CREATE TABLE IF NOT EXISTS `st_project_page` (
   `creator_name` varchar(50) NOT NULL,
   `location` varchar(100) NOT NULL,
   `location_url` varchar(150) NOT NULL,
-  `latitude` decimal(15,12) DEFAULT NULL,
-  `longitude` decimal(16,12) DEFAULT NULL,
   `category` varchar(100) NOT NULL,
   `short_url` varchar(100) NOT NULL,
   `full_desc` text,
@@ -152,7 +150,7 @@ ALTER TABLE `st_project_page`
 -- Indexes for table `st_project_stats`
 --
 ALTER TABLE `st_project_stats`
- ADD PRIMARY KEY (`load_time`,`project_id`), ADD KEY `site_id` (`site_id`), ADD KEY `load_time` (`load_time`);
+ ADD PRIMARY KEY (`load_time`,`project_id`), ADD KEY `site_id` (`site_id`), ADD KEY `load_time` (`load_time`), ADD KEY `project_id` (`project_id`);
 
 --
 -- Indexes for table `st_site_index`
@@ -181,6 +179,16 @@ ALTER TABLE `wp_users`
 --
 ALTER TABLE `wp_users`
 MODIFY `ID` bigint(20) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
+--
+-- Ограничения внешнего ключа сохраненных таблиц
+--
+
+--
+-- Ограничения внешнего ключа таблицы `st_project_stats`
+--
+ALTER TABLE `st_project_stats`
+ADD CONSTRAINT `st_project_stats_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `st_project_page` (`project_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

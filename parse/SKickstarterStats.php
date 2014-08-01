@@ -26,7 +26,7 @@ class SKickstarterStats extends Sqissor {
                      'project_id' =>  $project_id);
         
         if ($httpReturnCode == 404) {
-            Row::setTableName($this->getopt('page_table'));
+            Row::setTableNameKey($this->getopt('page_table'));
             Row::updateIgnoreWith(array('state' => "404"), array('project_id' => $project_id));
             return;
         }
@@ -42,7 +42,7 @@ class SKickstarterStats extends Sqissor {
         $pdata = json_decode($json, true);
         
         if ($pdata['state'] != 'live') {
-            Row::setTableName($this->getopt('page_table'));
+            Row::setTableNameKey($this->getopt('page_table'));
             Row::updateIgnoreWith(array('state' => $pdata['state']), array('project_id' => $project_id));
         }
         
@@ -72,7 +72,7 @@ class SKickstarterStats extends Sqissor {
              */
         } else {
             // Add new record
-            Row::setTableName($this->getopt('stats_table'));
+            Row::setTableNameKey($this->getopt('stats_table'));
             Row::createWith($this->row);
         }
     }

@@ -21,11 +21,11 @@ class SKickstarterPage extends Sqissor {
                      'ref_page' => $this->getopt('ref_page'),
                      'mailformed' => 0
             );
-        Row::setTableName($this->getopt('page_table'));
+        Row::setTableNameKey($this->getopt('page_table'), 'project_id');
 
         if ($httpReturnCode == 404) {
-            $this->row['state'] = "404";
-            Row::createOrReplaceWith($this->row);
+            //$this->row['state'] = "404";
+            //Row::createOrUpdateWith($this->row);
             return;
         }
 
@@ -33,10 +33,10 @@ class SKickstarterPage extends Sqissor {
             $this->parsePage($data);
         } catch (ESqissor $e) {
             $this->row['mailformed'] = 1;
-            Row::createOrReplaceWith($this->row);
+            Row::createOrUpdateWith($this->row);
             throw $e;
         }
-        Row::createOrReplaceWith($this->row);
+        Row::createOrUpdateWith($this->row);
     }
 
     private function parsePage($data) {
