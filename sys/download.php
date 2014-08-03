@@ -180,14 +180,19 @@ class Download {
         self::$starttransfer_times += $meta['starttransfer_time']; 
     if (isset($meta['size_download']))
         self::$size_download += $meta['size_download']; 
-    
+
     // if ($errno == CURLE_OPERATION_TIMEOUTED) { // Does not work in multi-curl
     if (isset($meta['starttransfer_time']) && $meta['starttransfer_time'] == 0) {
         self::$timeouts++;
         $this->retry++;
         warn("Download timeout, retry $this->retry. $this->url");
-        if ($this->retry < cfg('dlRetry'))
+        if ($this->retry < cfg('dlRetry')) {
             return $this->startRequest();     // Retry request
+        } else {
+            error("Download timeout, request canelled. $this->url");
+            return $this;       //  Do not process request;
+        }
+        
     }
     
     if ($this->httpCode() == 429) {
