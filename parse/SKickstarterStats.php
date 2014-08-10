@@ -57,6 +57,7 @@ class SKickstarterStats extends Sqissor {
         // Compare with old
         $sql = "SELECT `load_time`, `pledged`, `backers_count`, `comments_count`, `updates_count`\n"
             . "FROM `st_project_stats`\n"
+            . "FORCE INDEX (project_id)\n"
             . "WHERE `project_id`=\"$project_id\"\n"
             . "ORDER BY `load_time` DESC\n"
             . "LIMIT 1";
