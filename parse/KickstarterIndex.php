@@ -5,7 +5,7 @@
  * "http://www.kickstarter.com/discover/recently-launched?page=1"
  * 
  */
-class SKickstarterIndex extends Sqissor {
+class KickstarterIndex extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
     
     protected function startParse() {

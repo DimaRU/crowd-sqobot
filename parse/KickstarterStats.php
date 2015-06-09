@@ -5,7 +5,7 @@
  * "http://www.kickstarter.com/project/.......
  * 
  */
-class SKickstarterStats extends Sqissor {
+class KickstarterStats extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
     
     protected function compareRows(array $row1, array $row2) {

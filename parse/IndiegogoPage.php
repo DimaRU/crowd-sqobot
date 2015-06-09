@@ -5,7 +5,7 @@
  * "http://www.indiegogo.com/project/.......
  * 
  */
-class SIndiegogoPage extends Sqissor {
+class IndiegogoPage extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
     private $newurl;
     

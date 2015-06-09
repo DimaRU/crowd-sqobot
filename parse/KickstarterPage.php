@@ -5,7 +5,7 @@
  * "http://www.kickstarter.com/project/.......
  * 
  */
-class SKickstarterPage extends Sqissor {
+class KickstarterPage extends Sqissor {
     static $domain_name = 'www.kickstarter.com';
     static $accept = "text/html";
     
@@ -33,7 +33,7 @@ class SKickstarterPage extends Sqissor {
             $this->parsePage($data);
         } catch (ESqissor $e) {
             $this->row['mailformed'] = 1;
-            Row::createOrUpdateWith($this->row);
+            //Row::createOrUpdateWith($this->row);
             throw $e;
         }
         Row::createOrUpdateWith($this->row);

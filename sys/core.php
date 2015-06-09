@@ -196,7 +196,7 @@ function cfgDbOptions($group) {
 
     foreach ($optlist as $key => $opt) {
         foreach ($opt as $optkey =>$value) {
-            $optlist[$key][$optkey] = cfg('dbPrefix').$value;
+            $optlist[$key][$optkey] = $value;
         }
     }
     return $optlist;

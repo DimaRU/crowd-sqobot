@@ -5,7 +5,7 @@
  * "http://www.indiegogo.com/projects?filter_quick=new&pg_num=1"
  * 
  */
-class SIndiegogoIndex extends Sqissor {
+class IndiegogoIndex extends Sqissor {
     static $domain_name = 'www.indiegogo.com';
     const PROJ_MARK = '<a href="/projects/';
     

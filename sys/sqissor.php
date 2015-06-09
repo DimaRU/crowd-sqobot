@@ -37,7 +37,7 @@ abstract class Sqissor {
     $class = cfg("class $site", NS.'$');
 
     if (!$class) {
-      $class = NS.'S'.preg_replace('/\.+(.)/e', 'strtoupper("\\1")', ".$site");
+      $class = NS.preg_replace('/\.+(.)/e', 'strtoupper("\\1")', ".$site");
     }
 
     if (class_exists($class)) {
@@ -52,7 +52,7 @@ abstract class Sqissor {
   static function siteNameFrom($class) {
     is_object($class) and $class = get_class($class);
 
-    if (S::unprefix($class, NS.'S')) {
+    if (S::unprefix($class, NS)) {
       return strtolower( trim(preg_replace('/[A-Z]/', '.\\0', $class), '.') );
     } else {
       return $class;
